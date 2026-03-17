@@ -1,9 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/l10n/app_localizations.dart';
 import 'core/navigation/app_router.dart';
 import 'core/navigation/app_routes.dart';
 import 'core/providers/providers.dart';
@@ -18,19 +17,14 @@ class ClawTalkApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return CupertinoApp(
-      title: 'ClawTalk',
+      title: 'appName'.tr(),
       navigatorKey: AppRouter.navigatorKey,
       theme: themeMode == ThemeMode.dark
           ? AppTheme.darkTheme
           : AppTheme.cupertinoTheme,
       locale: locale,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
       initialRoute: AppRoutes.root,
       onGenerateRoute: AppRouteGenerator.generateRoute,
       debugShowCheckedModeBanner: false,

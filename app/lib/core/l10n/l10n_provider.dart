@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-
-import 'app_localizations.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
   return LocaleNotifier();
@@ -16,10 +15,12 @@ class LocaleNotifier extends StateNotifier<Locale> {
   }
 
   void setEnglish() => setLocale(const Locale('en'));
-  void setChinese() => setLocale(const Locale('zh'));
-}
+  void setSimplifiedChinese() => setLocale(const Locale('zh'));
+  void setTraditionalChinese() => setLocale(const Locale('zh', 'TW'));
 
-final localizationProvider = Provider<AppLocalizations>((ref) {
-  final locale = ref.watch(localeProvider);
-  return AppLocalizations(locale);
-});
+  static List<Locale> get supportedLocales => const [
+    Locale('en'),
+    Locale('zh'),
+    Locale('zh', 'TW'),
+  ];
+}
