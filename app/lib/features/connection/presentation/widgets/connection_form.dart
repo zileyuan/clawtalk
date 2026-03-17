@@ -90,7 +90,7 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
               ref.read(connectionFormProvider.notifier).setName(value);
             },
             decoration: const BoxDecoration(),
-            style: AppTextStyles.body,
+            style: AppTextStyles.body.copyWith(color: CupertinoColors.black),
           ),
         ),
         if (formState.hasFieldError('name'))
@@ -112,7 +112,7 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
               ref.read(connectionFormProvider.notifier).setHost(value);
             },
             decoration: const BoxDecoration(),
-            style: AppTextStyles.body,
+            style: AppTextStyles.body.copyWith(color: CupertinoColors.black),
             keyboardType: TextInputType.url,
             autocorrect: false,
           ),
@@ -136,7 +136,7 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
               ref.read(connectionFormProvider.notifier).setPort(value);
             },
             decoration: const BoxDecoration(),
-            style: AppTextStyles.body,
+            style: AppTextStyles.body.copyWith(color: CupertinoColors.black),
             keyboardType: TextInputType.number,
           ),
         ),
@@ -384,7 +384,7 @@ class _ConnectionFormWithAuthState
         ),
         onChanged: onChanged,
         decoration: const BoxDecoration(),
-        style: AppTextStyles.body,
+        style: AppTextStyles.body.copyWith(color: CupertinoColors.black),
         keyboardType: keyboardType,
         obscureText: obscureText,
         autocorrect: false,
@@ -416,7 +416,7 @@ class _ConnectionFormWithAuthState
               ),
               onChanged: onChanged,
               decoration: const BoxDecoration(),
-              style: AppTextStyles.body,
+              style: AppTextStyles.body.copyWith(color: CupertinoColors.black),
               obscureText: !isVisible,
               autocorrect: false,
             ),

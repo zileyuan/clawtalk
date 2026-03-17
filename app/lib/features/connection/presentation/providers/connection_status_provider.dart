@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
+import '../../../../core/providers/connection_provider.dart' as manager;
+import '../../domain/entities/connection_config.dart';
 import '../../domain/entities/connection_status.dart';
 
 /// State for connection status
@@ -48,9 +50,10 @@ class ConnectionStatusState {
 
 /// Notifier for managing real-time connection status
 class ConnectionStatusNotifier extends StateNotifier<ConnectionStatusState> {
+  final Ref _ref;
   Timer? _pollingTimer;
 
-  ConnectionStatusNotifier() : super(const ConnectionStatusState());
+  ConnectionStatusNotifier(this._ref) : super(const ConnectionStatusState());
 
   /// Start monitoring connection statuses
   void startMonitoring() {
@@ -58,10 +61,45 @@ class ConnectionStatusNotifier extends StateNotifier<ConnectionStatusState> {
 
     state = state.copyWith(isMonitoring: true);
 
+    // Sync with connection manager state
+    _syncWithConnectionManager();
+
     // Poll for status updates every 2 seconds
     _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      _pollStatuses();
+      _syncWithConnectionManager();
     });
+  }
+
+  /// Sync with connection manager
+  void _syncWithConnectionManager() {
+    final managerState = _ref.read(manager.connectionManagerProvider);
+    final activeId = managerState.activeConnectionId;
+
+    if (activeId != null) {
+      final status = _mapConnectionStatus(managerState.status);
+      _updateStatus(
+        activeId,
+        status,
+        errorMessage: managerState.errorMessage,
+        lastConnected: managerState.lastConnected,
+      );
+    }
+  }
+
+  /// Map connection manager status to local status
+  ConnectionStatus _mapConnectionStatus(manager.ConnectionStatus status) {
+    switch (status) {
+      case manager.ConnectionStatus.connected:
+        return ConnectionStatus.connected;
+      case manager.ConnectionStatus.connecting:
+        return ConnectionStatus.connecting;
+      case manager.ConnectionStatus.disconnecting:
+        return ConnectionStatus.disconnecting;
+      case manager.ConnectionStatus.disconnected:
+        return ConnectionStatus.disconnected;
+      case manager.ConnectionStatus.error:
+        return ConnectionStatus.error;
+    }
   }
 
   /// Stop monitoring
@@ -69,12 +107,6 @@ class ConnectionStatusNotifier extends StateNotifier<ConnectionStatusState> {
     _pollingTimer?.cancel();
     _pollingTimer = null;
     state = state.copyWith(isMonitoring: false);
-  }
-
-  /// Poll current statuses (simulated for now)
-  void _pollStatuses() {
-    // TODO: Replace with actual status polling from connection manager
-    // For now, keep existing statuses
   }
 
   /// Update status for a specific connection
@@ -148,12 +180,27 @@ class ConnectionStatusNotifier extends StateNotifier<ConnectionStatusState> {
     state = state.copyWith(statuses: updatedStatuses);
   }
 
-  /// Connect to a connection
+  /// Connect to a connection using real ACP client
+  Future<void> connectToConnection(ConnectionConfig config) async {
+    setConnecting(config.id);
+
+    try {
+      await _ref
+          .read(manager.connectionManagerProvider.notifier)
+          .connect(config);
+      setConnected(config.id);
+    } catch (e) {
+      setError(config.id, e.toString());
+      rethrow;
+    }
+  }
+
+  /// Connect to a connection (legacy method for compatibility)
   Future<void> connect(String connectionId) async {
     setConnecting(connectionId);
 
     try {
-      // TODO: Replace with actual connection logic
+      // This is a legacy method - the actual connection should use connectToConnection
       await Future.delayed(const Duration(seconds: 1));
       setConnected(connectionId);
     } catch (e) {
@@ -166,8 +213,7 @@ class ConnectionStatusNotifier extends StateNotifier<ConnectionStatusState> {
     setDisconnecting(connectionId);
 
     try {
-      // TODO: Replace with actual disconnection logic
-      await Future.delayed(const Duration(milliseconds: 500));
+      await _ref.read(manager.connectionManagerProvider.notifier).disconnect();
       setDisconnected(connectionId);
     } catch (e) {
       setError(connectionId, e.toString());
@@ -191,7 +237,7 @@ class ConnectionStatusNotifier extends StateNotifier<ConnectionStatusState> {
 /// Provider for connection status state
 final connectionStatusProvider =
     StateNotifierProvider<ConnectionStatusNotifier, ConnectionStatusState>(
-      (ref) => ConnectionStatusNotifier(),
+      (ref) => ConnectionStatusNotifier(ref),
     );
 
 /// Provider for specific connection status
@@ -202,7 +248,10 @@ final connectionStatusByIdProvider =
     });
 
 /// Provider to check if a connection is connected
-final isConnectedProvider = Provider.family<bool, String>((ref, connectionId) {
+final isConnectedByIdProvider = Provider.family<bool, String>((
+  ref,
+  connectionId,
+) {
   final state = ref.watch(connectionStatusProvider);
   return state.isConnected(connectionId);
 });

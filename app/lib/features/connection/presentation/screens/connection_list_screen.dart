@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/themes/app_text_styles.dart';
+import '../../domain/entities/connection_config.dart';
+import '../../../messaging/presentation/screens/session_list_screen.dart';
 import '../providers/connection_list_provider.dart';
 import '../providers/connection_status_provider.dart';
 import '../widgets/connection_card.dart';
@@ -164,25 +166,32 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
   }
 
   void _onConnectionTap(String connectionId) {
-    // TODO: Navigate to connection detail or trigger connect
-    // For now, show a simple action sheet
+    // Get the connection config
+    final state = ref.read(connectionListProvider);
+    final connection = state.connections
+        .where((c) => c.id == connectionId)
+        .firstOrNull;
+
+    if (connection == null) return;
+
+    // Show action sheet with connection options
     showCupertinoModalPopup<void>(
       context: context,
       builder: (BuildContext context) => CupertinoActionSheet(
-        title: const Text('Connection Options'),
-        message: const Text('What would you like to do?'),
+        title: Text(connection.name),
+        message: Text('${connection.host}:${connection.port}'),
         actions: [
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(connectionStatusProvider.notifier).connect(connectionId);
+              _connectToGateway(connection);
             },
             child: const Text('Connect'),
           ),
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Navigate to conversation/messaging
+              _navigateToChat(connectionId);
             },
             child: const Text('Open Chat'),
           ),
@@ -191,6 +200,55 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
+      ),
+    );
+  }
+
+  Future<void> _connectToGateway(ConnectionConfig connection) async {
+    try {
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(connection);
+      if (mounted) {
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connected'),
+            content: Text(
+              'Successfully connected to ${connection.host}:${connection.port}',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connection Failed'),
+            content: Text(e.toString()),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  void _navigateToChat(String connectionId) {
+    Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (context) => SessionListScreen(connectionId: connectionId),
       ),
     );
   }
