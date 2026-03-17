@@ -10,8 +10,11 @@ import 'chat_screen.dart';
 
 /// Session history list screen
 class SessionListScreen extends ConsumerStatefulWidget {
+  /// The connection ID for this session list
+  final String? connectionId;
+
   /// Creates a session list screen
-  const SessionListScreen({super.key});
+  const SessionListScreen({super.key, this.connectionId});
 
   @override
   ConsumerState<SessionListScreen> createState() => _SessionListScreenState();
@@ -131,10 +134,11 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
   }
 
   Future<void> _createSessionWithAgent(String agentId) async {
-    final session = await ref.read(sessionProvider.notifier).createSession(
+    final session = await ref
+        .read(sessionProvider.notifier)
+        .createSession(
           agentId: agentId,
-          connectionId:
-              'default-connection', // TODO: Get from connection provider
+          connectionId: widget.connectionId ?? 'default-connection',
         );
 
     if (session != null && mounted) {

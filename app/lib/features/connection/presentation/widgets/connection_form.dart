@@ -34,7 +34,7 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
     super.initState();
     _nameController = TextEditingController();
     _hostController = TextEditingController();
-    _portController = TextEditingController(text: '8080');
+    _portController = TextEditingController(text: '18789');
     _tokenController = TextEditingController();
     _passwordController = TextEditingController();
 
@@ -83,6 +83,9 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
           child: CupertinoTextField(
             controller: _nameController,
             placeholder: 'Connection Name',
+            placeholderStyle: AppTextStyles.body.copyWith(
+              color: CupertinoColors.placeholderText,
+            ),
             onChanged: (value) {
               ref.read(connectionFormProvider.notifier).setName(value);
             },
@@ -102,6 +105,9 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
           child: CupertinoTextField(
             controller: _hostController,
             placeholder: 'Host (e.g., localhost or 192.168.1.1)',
+            placeholderStyle: AppTextStyles.body.copyWith(
+              color: CupertinoColors.placeholderText,
+            ),
             onChanged: (value) {
               ref.read(connectionFormProvider.notifier).setHost(value);
             },
@@ -123,6 +129,9 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
           child: CupertinoTextField(
             controller: _portController,
             placeholder: 'Port',
+            placeholderStyle: AppTextStyles.body.copyWith(
+              color: CupertinoColors.placeholderText,
+            ),
             onChanged: (value) {
               ref.read(connectionFormProvider.notifier).setPort(value);
             },
@@ -196,13 +205,15 @@ class _ConnectionFormWithAuthState
   late final TextEditingController _tokenController;
   late final TextEditingController _passwordController;
   bool _showAuthSection = false;
+  bool _showToken = false;
+  bool _showPassword = false;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
     _hostController = TextEditingController();
-    _portController = TextEditingController(text: '8080');
+    _portController = TextEditingController(text: '18789');
     _tokenController = TextEditingController();
     _passwordController = TextEditingController();
 
@@ -212,7 +223,8 @@ class _ConnectionFormWithAuthState
             .read(connectionFormProvider.notifier)
             .initializeWithConnection(widget.initialConnection!);
         _updateControllers(widget.initialConnection!);
-        _showAuthSection = widget.initialConnection?.token != null ||
+        _showAuthSection =
+            widget.initialConnection?.token != null ||
             widget.initialConnection?.password != null;
       }
     });
@@ -312,22 +324,26 @@ class _ConnectionFormWithAuthState
           ),
           children: _showAuthSection
               ? [
-                  _buildTextField(
+                  _buildPasswordField(
                     controller: _tokenController,
                     icon: CupertinoIcons.lock,
                     placeholder: 'Access Token (optional)',
                     onChanged: (v) =>
                         ref.read(connectionFormProvider.notifier).setToken(v),
-                    obscureText: true,
+                    isVisible: _showToken,
+                    onToggleVisibility: () =>
+                        setState(() => _showToken = !_showToken),
                   ),
-                  _buildTextField(
+                  _buildPasswordField(
                     controller: _passwordController,
                     icon: CupertinoIcons.lock,
                     placeholder: 'Password (optional)',
                     onChanged: (v) => ref
                         .read(connectionFormProvider.notifier)
                         .setPassword(v),
-                    obscureText: true,
+                    isVisible: _showPassword,
+                    onToggleVisibility: () =>
+                        setState(() => _showPassword = !_showPassword),
                   ),
                 ]
               : [
@@ -363,12 +379,58 @@ class _ConnectionFormWithAuthState
       child: CupertinoTextField(
         controller: controller,
         placeholder: placeholder,
+        placeholderStyle: AppTextStyles.body.copyWith(
+          color: CupertinoColors.placeholderText,
+        ),
         onChanged: onChanged,
         decoration: const BoxDecoration(),
         style: AppTextStyles.body,
         keyboardType: keyboardType,
         obscureText: obscureText,
         autocorrect: false,
+      ),
+    );
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String placeholder,
+    required ValueChanged<String> onChanged,
+    required bool isVisible,
+    required VoidCallback onToggleVisibility,
+  }) {
+    return CupertinoFormRow(
+      prefix: Padding(
+        padding: const EdgeInsets.only(right: 16),
+        child: Icon(icon, size: 22),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: CupertinoTextField(
+              controller: controller,
+              placeholder: placeholder,
+              placeholderStyle: AppTextStyles.body.copyWith(
+                color: CupertinoColors.placeholderText,
+              ),
+              onChanged: onChanged,
+              decoration: const BoxDecoration(),
+              style: AppTextStyles.body,
+              obscureText: !isVisible,
+              autocorrect: false,
+            ),
+          ),
+          CupertinoButton(
+            padding: const EdgeInsets.only(left: 8),
+            onPressed: onToggleVisibility,
+            child: Icon(
+              isVisible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+              size: 20,
+              color: CupertinoColors.systemGrey,
+            ),
+          ),
+        ],
       ),
     );
   }
