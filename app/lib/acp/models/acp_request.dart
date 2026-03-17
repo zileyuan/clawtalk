@@ -7,7 +7,7 @@ part 'acp_request.freezed.dart';
 part 'acp_request.g.dart';
 
 /// ACP Request message type
-/// 
+///
 /// Request messages are sent from client to server with an ID for correlation.
 /// The [method] field specifies the action to perform.
 /// The [params] field contains method-specific parameters.
@@ -18,10 +18,10 @@ class AcpRequest extends AcpMessage with _$AcpRequest {
   const factory AcpRequest({
     /// Unique request ID for correlation with response
     required String id,
-    
+
     /// Method name to invoke
     required String method,
-    
+
     /// Method-specific parameters
     required Map<String, dynamic> params,
   }) = _AcpRequest;
@@ -31,17 +31,17 @@ class AcpRequest extends AcpMessage with _$AcpRequest {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'req',
-        'id': id,
-        'method': method,
-        'params': params,
-      };
+    'type': 'req',
+    'id': id,
+    'method': method,
+    'params': params,
+  };
 
   factory AcpRequest.fromJson(Map<String, dynamic> json) => AcpRequest(
-        id: json['id'] as String,
-        method: json['method'] as String,
-        params: json['params'] as Map<String, dynamic>,
-      );
+    id: json['id'] as String,
+    method: json['method'] as String,
+    params: json['params'] as Map<String, dynamic>,
+  );
 }
 
 // ============================================================================
@@ -109,25 +109,30 @@ class PromptAttachment with _$PromptAttachment {
   factory PromptAttachment.fromContentBlock(ContentBlock block) {
     return switch (block) {
       TextContentBlock(:final text) => PromptAttachment(
-          type: 'text',
-          mimeType: 'text/plain',
-          data: text,
+        type: 'text',
+        mimeType: 'text/plain',
+        data: text,
+      ),
+      ImageContentBlock(
+        :final mimeType,
+        :final data,
+        :final width,
+        :final height,
+      ) =>
+        PromptAttachment(
+          type: 'image',
+          mimeType: mimeType,
+          data: data,
+          width: width,
+          height: height,
         ),
-      ImageContentBlock(:final mimeType, :final data, :final width, :final height) =>
-          PromptAttachment(
-            type: 'image',
-            mimeType: mimeType,
-            data: data,
-            width: width,
-            height: height,
-          ),
       AudioContentBlock(:final mimeType, :final data, :final duration) =>
-          PromptAttachment(
-            type: 'audio',
-            mimeType: mimeType,
-            data: data,
-            duration: duration,
-          ),
+        PromptAttachment(
+          type: 'audio',
+          mimeType: mimeType,
+          data: data,
+          duration: duration,
+        ),
     };
   }
 }
@@ -159,9 +164,8 @@ class SendMessageParams with _$SendMessageParams {
 /// End session request parameters
 @freezed
 class EndSessionParams with _$EndSessionParams {
-  const factory EndSessionParams({
-    required String sessionId,
-  }) = _EndSessionParams;
+  const factory EndSessionParams({required String sessionId}) =
+      _EndSessionParams;
 
   factory EndSessionParams.fromJson(Map<String, dynamic> json) =>
       _$EndSessionParamsFromJson(json);
@@ -170,10 +174,8 @@ class EndSessionParams with _$EndSessionParams {
 /// Cancel task request parameters
 @freezed
 class CancelTaskParams with _$CancelTaskParams {
-  const factory CancelTaskParams({
-    required String sessionId,
-    String? taskId,
-  }) = _CancelTaskParams;
+  const factory CancelTaskParams({required String sessionId, String? taskId}) =
+      _CancelTaskParams;
 
   factory CancelTaskParams.fromJson(Map<String, dynamic> json) =>
       _$CancelTaskParamsFromJson(json);
@@ -213,16 +215,17 @@ class AcpRequestFactory {
     return AcpRequest(
       id: generateId(),
       method: 'initialize',
-      params: InitializeParams(
-        minProtocol: minProtocol,
-        maxProtocol: maxProtocol,
-        clientInfo: ClientInfo(
-          id: clientId,
-          name: clientName,
-          version: version,
-          platform: platform,
-        ),
-      ).toJson(),
+      params:
+          InitializeParams(
+            minProtocol: minProtocol,
+            maxProtocol: maxProtocol,
+            clientInfo: ClientInfo(
+              id: clientId,
+              name: clientName,
+              version: version,
+              platform: platform,
+            ),
+          ).toJson(),
     );
   }
 
@@ -235,11 +238,8 @@ class AcpRequestFactory {
     return AcpRequest(
       id: generateId(),
       method: 'newSession',
-      params: CreateSessionParams(
-        cwd: cwd,
-        meta: meta,
-        agentId: agentId,
-      ).toJson(),
+      params:
+          CreateSessionParams(cwd: cwd, meta: meta, agentId: agentId).toJson(),
     );
   }
 
@@ -252,17 +252,16 @@ class AcpRequestFactory {
     return AcpRequest(
       id: generateId(),
       method: 'prompt',
-      params: SendMessageParams(
-        sessionId: sessionId,
-        prompt: PromptContent(text: text, attachments: attachments),
-      ).toJson(),
+      params:
+          SendMessageParams(
+            sessionId: sessionId,
+            prompt: PromptContent(text: text, attachments: attachments),
+          ).toJson(),
     );
   }
 
   /// Create end session request
-  static AcpRequest endSession({
-    required String sessionId,
-  }) {
+  static AcpRequest endSession({required String sessionId}) {
     return AcpRequest(
       id: generateId(),
       method: 'endSession',
@@ -271,10 +270,7 @@ class AcpRequestFactory {
   }
 
   /// Create cancel task request
-  static AcpRequest cancelTask({
-    required String sessionId,
-    String? taskId,
-  }) {
+  static AcpRequest cancelTask({required String sessionId, String? taskId}) {
     return AcpRequest(
       id: generateId(),
       method: 'cancel',
@@ -296,7 +292,9 @@ class AcpRequestFactory {
     return AcpRequest(
       id: generateId(),
       method: 'listSessions',
-      params: {'_meta': if (limit != null) {'limit': limit}},
+      params: {
+        if (limit != null) '_meta': {'limit': limit},
+      },
     );
   }
 }
