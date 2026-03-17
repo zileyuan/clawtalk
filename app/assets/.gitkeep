@@ -1,0 +1,19 @@
+# ClawTalk Assets
+
+This directory contains static assets for the ClawTalk application.
+
+## Structure
+
+```
+assets/
+├── images/     # Application images
+├── icons/      # Custom icons
+└── fonts/      # Custom fonts (SF Pro)
+```
+
+## Adding Assets
+
+1. Place images in `images/` directory
+2. Place custom icons in `icons/` directory
+3. Place font files in `fonts/` directory
+4. Reference them in `pubspec.yaml` under `flutter.assets`
