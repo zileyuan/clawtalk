@@ -31,6 +31,9 @@ Failure exceptionToFailure(AppException exception) {
       message: exception.message,
       code: exception.code,
     ),
-    AppException() => Failure(message: exception.message, code: exception.code),
+    AppException() => ServerFailure(
+      message: exception.message,
+      code: exception.code,
+    ),
   };
 }

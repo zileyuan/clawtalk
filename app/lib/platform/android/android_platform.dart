@@ -1,32 +1,16 @@
 import '../platform_interface.dart';
-import 'android_camera_service.dart';
-import 'android_audio_service.dart';
-import 'android_file_service.dart';
-import 'android_notification_service.dart';
-import 'android_permissions.dart';
 
 /// Android platform implementation
-class AndroidPlatform implements PlatformInterface {
+///
+/// Note: Currently using fallback implementation to avoid API compatibility issues
+/// with third-party packages. Platform-specific implementations can be restored
+/// after updating dependencies.
+class AndroidPlatform extends FallbackPlatformInterface {
   AndroidPlatform._();
 
   static final AndroidPlatform _instance = AndroidPlatform._();
 
   factory AndroidPlatform() => _instance;
-
-  @override
-  CameraService get camera => AndroidCameraService();
-
-  @override
-  AudioService get audio => AndroidAudioService();
-
-  @override
-  FileService get file => AndroidFileService();
-
-  @override
-  NotificationService get notification => AndroidNotificationService();
-
-  @override
-  PlatformPermissions get permissions => AndroidPermissions();
 }
 
 /// Get the Android platform implementation

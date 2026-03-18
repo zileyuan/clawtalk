@@ -120,7 +120,7 @@ class AcpClientImpl implements AcpClient {
       await _subscription?.cancel();
       _subscription = null;
 
-      await _channel?.close(
+      await _channel?.sink.close(
         ws_status.goingAway,
         reason ?? 'Client disconnecting',
       );
