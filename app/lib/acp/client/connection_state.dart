@@ -1,7 +1,3 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'connection_state.freezed.dart';
-
 /// Connection status enum representing the current state of the connection
 enum ConnectionStatus {
   /// Not connected to any server
@@ -24,16 +20,40 @@ enum ConnectionStatus {
 }
 
 /// Connection state model containing detailed connection information
-@freezed
-class ConnectionState with _$ConnectionState {
-  const factory ConnectionState({
-    required ConnectionStatus status,
-    required DateTime? lastConnected,
-    required String? errorMessage,
-    required int reconnectAttempts,
-    required int? lastLatency,
-    required String? serverVersion,
-  }) = _ConnectionState;
+class ConnectionState {
+  final ConnectionStatus status;
+  final DateTime? lastConnected;
+  final String? errorMessage;
+  final int reconnectAttempts;
+  final int? lastLatency;
+  final String? serverVersion;
+
+  const ConnectionState({
+    required this.status,
+    this.lastConnected,
+    this.errorMessage,
+    this.reconnectAttempts = 0,
+    this.lastLatency,
+    this.serverVersion,
+  });
+
+  ConnectionState copyWith({
+    ConnectionStatus? status,
+    DateTime? lastConnected,
+    String? errorMessage,
+    int? reconnectAttempts,
+    int? lastLatency,
+    String? serverVersion,
+  }) {
+    return ConnectionState(
+      status: status ?? this.status,
+      lastConnected: lastConnected ?? this.lastConnected,
+      errorMessage: errorMessage ?? this.errorMessage,
+      reconnectAttempts: reconnectAttempts ?? this.reconnectAttempts,
+      lastLatency: lastLatency ?? this.lastLatency,
+      serverVersion: serverVersion ?? this.serverVersion,
+    );
+  }
 
   factory ConnectionState.initial() => const ConnectionState(
     status: ConnectionStatus.disconnected,
@@ -42,6 +62,27 @@ class ConnectionState with _$ConnectionState {
     reconnectAttempts: 0,
     lastLatency: null,
     serverVersion: null,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConnectionState &&
+          status == other.status &&
+          lastConnected == other.lastConnected &&
+          errorMessage == other.errorMessage &&
+          reconnectAttempts == other.reconnectAttempts &&
+          lastLatency == other.lastLatency &&
+          serverVersion == other.serverVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    status,
+    lastConnected,
+    errorMessage,
+    reconnectAttempts,
+    lastLatency,
+    serverVersion,
   );
 }
 

@@ -1,28 +1,110 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_constants.dart';
 
-part 'connection_config.freezed.dart';
-part 'connection_config.g.dart';
-
 /// Configuration for ACP WebSocket connection
-@freezed
-class ConnectionConfig with _$ConnectionConfig {
-  const factory ConnectionConfig({
-    required String id,
-    required String name,
-    required String host,
-    required int port,
+class ConnectionConfig {
+  final String id;
+  final String name;
+  final String host;
+  final int port;
+  final String? token;
+  final String? password;
+  final bool useTLS;
+  final Duration connectionTimeout;
+  final Duration heartbeatInterval;
+
+  const ConnectionConfig({
+    required this.id,
+    required this.name,
+    required this.host,
+    required this.port,
+    this.token,
+    this.password,
+    this.useTLS = false,
+    this.connectionTimeout = AppConstants.connectionTimeout,
+    this.heartbeatInterval = AppConstants.heartbeatInterval,
+  });
+
+  ConnectionConfig copyWith({
+    String? id,
+    String? name,
+    String? host,
+    int? port,
     String? token,
     String? password,
-    @Default(false) bool useTLS,
-    @Default(AppConstants.connectionTimeout) Duration connectionTimeout,
-    @Default(AppConstants.heartbeatInterval) Duration heartbeatInterval,
-  }) = _ConnectionConfig;
+    bool? useTLS,
+    Duration? connectionTimeout,
+    Duration? heartbeatInterval,
+  }) {
+    return ConnectionConfig(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      host: host ?? this.host,
+      port: port ?? this.port,
+      token: token ?? this.token,
+      password: password ?? this.password,
+      useTLS: useTLS ?? this.useTLS,
+      connectionTimeout: connectionTimeout ?? this.connectionTimeout,
+      heartbeatInterval: heartbeatInterval ?? this.heartbeatInterval,
+    );
+  }
 
   factory ConnectionConfig.fromJson(Map<String, dynamic> json) =>
-      _$ConnectionConfigFromJson(json);
+      ConnectionConfig(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        host: json['host'] as String,
+        port: json['port'] as int,
+        token: json['token'] as String?,
+        password: json['password'] as String?,
+        useTLS: json['useTLS'] as bool? ?? false,
+        connectionTimeout: json['connectionTimeout'] != null
+            ? Duration(milliseconds: json['connectionTimeout'] as int)
+            : AppConstants.connectionTimeout,
+        heartbeatInterval: json['heartbeatInterval'] != null
+            ? Duration(milliseconds: json['heartbeatInterval'] as int)
+            : AppConstants.heartbeatInterval,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'host': host,
+    'port': port,
+    if (token != null) 'token': token,
+    if (password != null) 'password': password,
+    'useTLS': useTLS,
+    'connectionTimeout': connectionTimeout.inMilliseconds,
+    'heartbeatInterval': heartbeatInterval.inMilliseconds,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConnectionConfig &&
+          id == other.id &&
+          name == other.name &&
+          host == other.host &&
+          port == other.port &&
+          token == other.token &&
+          password == other.password &&
+          useTLS == other.useTLS &&
+          connectionTimeout == other.connectionTimeout &&
+          heartbeatInterval == other.heartbeatInterval;
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    host,
+    port,
+    token,
+    password,
+    useTLS,
+    connectionTimeout,
+    heartbeatInterval,
+  );
 }
 
 /// Extension for ConnectionConfig utilities

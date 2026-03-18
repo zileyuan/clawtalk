@@ -19,7 +19,7 @@ class MessageService {
   final MessageQueue<Map<String, dynamic>> _sendQueue;
   final Map<String, PendingRequest> _pendingRequests = {};
 
-  final _messageController = StreamController<AcpMessage>.broadcast();
+  final _messageController = StreamController<AcpMessageBase>.broadcast();
   final _errorController = StreamController<MessageError>.broadcast();
 
   StreamSubscription? _eventSubscription;
@@ -31,7 +31,7 @@ class MessageService {
        _sendQueue = sendQueue ?? MessageQueue<Map<String, dynamic>>();
 
   /// Stream of incoming messages
-  Stream<AcpMessage> get messages => _messageController.stream;
+  Stream<AcpMessageBase> get messages => _messageController.stream;
 
   /// Stream of message errors
   Stream<MessageError> get errors => _errorController.stream;
@@ -166,7 +166,9 @@ class MessageService {
   bool cancelRequest(String id) {
     final pending = _pendingRequests.remove(id);
     if (pending != null && !pending.completer.isCompleted) {
-      pending.completer.completeError(AcpException('Request cancelled'));
+      pending.completer.completeError(
+        AcpRequestException('Request cancelled', requestId: id),
+      );
       return true;
     }
     return false;
@@ -176,7 +178,12 @@ class MessageService {
   void clearPending() {
     for (final pending in _pendingRequests.values) {
       if (!pending.completer.isCompleted) {
-        pending.completer.completeError(AcpException('Requests cleared'));
+        pending.completer.completeError(
+          AcpRequestException(
+            'Requests cleared',
+            requestId: pending.request.id,
+          ),
+        );
       }
     }
     _pendingRequests.clear();

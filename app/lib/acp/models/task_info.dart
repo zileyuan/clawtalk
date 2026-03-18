@@ -1,95 +1,258 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'task_info.freezed.dart';
-part 'task_info.g.dart';
-
 /// Task status enum
 enum TaskStatus {
-  @JsonValue('pending')
   pending,
-  @JsonValue('running')
   running,
-  @JsonValue('completed')
   completed,
-  @JsonValue('failed')
   failed,
-  @JsonValue('cancelled')
   cancelled;
 
-  static TaskStatus fromString(String value) {
-    return TaskStatus.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => TaskStatus.pending,
-    );
-  }
+  String toJson() => name;
+
+  static TaskStatus fromJson(String value) => TaskStatus.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => TaskStatus.pending,
+  );
 }
 
 /// Task progress information
-@freezed
-class TaskProgress with _$TaskProgress {
-  const factory TaskProgress({
-    /// Current progress value (0-100)
-    required int current,
+class TaskProgress {
+  /// Current progress value (0-100)
+  final int current;
 
-    /// Total value (usually 100)
-    @Default(100) int total,
+  /// Total value (usually 100)
+  final int total;
 
-    /// Progress message
+  /// Progress message
+  final String? message;
+
+  /// Progress percentage (0.0 - 1.0)
+  final double percentage;
+
+  const TaskProgress({
+    required this.current,
+    this.total = 100,
+    this.message,
+    this.percentage = 0.0,
+  });
+
+  factory TaskProgress.fromJson(Map<String, dynamic> json) {
+    return TaskProgress(
+      current: json['current'] as int,
+      total: json['total'] as int? ?? 100,
+      message: json['message'] as String?,
+      percentage: (json['percentage'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{'current': current};
+    if (total != 100) json['total'] = total;
+    if (message != null) json['message'] = message;
+    if (percentage != 0.0) json['percentage'] = percentage;
+    return json;
+  }
+
+  TaskProgress copyWith({
+    int? current,
+    int? total,
     String? message,
+    double? percentage,
+  }) {
+    return TaskProgress(
+      current: current ?? this.current,
+      total: total ?? this.total,
+      message: message ?? this.message,
+      percentage: percentage ?? this.percentage,
+    );
+  }
 
-    /// Progress percentage (0.0 - 1.0)
-    @Default(0.0) double percentage,
-  }) = _TaskProgress;
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TaskProgress &&
+        other.current == current &&
+        other.total == total &&
+        other.message == message &&
+        other.percentage == percentage;
+  }
 
-  factory TaskProgress.fromJson(Map<String, dynamic> json) =>
-      _$TaskProgressFromJson(json);
+  @override
+  int get hashCode => Object.hash(current, total, message, percentage);
+
+  @override
+  String toString() =>
+      'TaskProgress(current: $current, total: $total, message: $message, percentage: $percentage)';
 }
 
 /// Task information model
 ///
 /// Represents an ongoing task within a session.
-@freezed
-class TaskInfo with _$TaskInfo {
-  const factory TaskInfo({
-    /// Unique task identifier
-    required String id,
+class TaskInfo {
+  /// Unique task identifier
+  final String id;
 
-    /// Associated session ID
-    required String sessionId,
+  /// Associated session ID
+  final String sessionId;
 
-    /// Task name/type
+  /// Task name/type
+  final String? name;
+
+  /// Current task status
+  final TaskStatus status;
+
+  /// Task progress
+  final TaskProgress? progress;
+
+  /// Creation timestamp
+  final DateTime createdAt;
+
+  /// Start timestamp
+  final DateTime? startedAt;
+
+  /// Completion timestamp
+  final DateTime? completedAt;
+
+  /// Error message if failed
+  final String? error;
+
+  /// Result data
+  final Map<String, dynamic>? result;
+
+  /// Parent task ID (for subtasks)
+  final String? parentTaskId;
+
+  /// Additional metadata
+  final Map<String, dynamic>? meta;
+
+  const TaskInfo({
+    required this.id,
+    required this.sessionId,
+    this.name,
+    this.status = TaskStatus.pending,
+    this.progress,
+    required this.createdAt,
+    this.startedAt,
+    this.completedAt,
+    this.error,
+    this.result,
+    this.parentTaskId,
+    this.meta,
+  });
+
+  factory TaskInfo.fromJson(Map<String, dynamic> json) {
+    return TaskInfo(
+      id: json['id'] as String,
+      sessionId: json['sessionId'] as String,
+      name: json['name'] as String?,
+      status: json['status'] != null
+          ? TaskStatus.fromJson(json['status'] as String)
+          : TaskStatus.pending,
+      progress: json['progress'] != null
+          ? TaskProgress.fromJson(json['progress'] as Map<String, dynamic>)
+          : null,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      startedAt: json['startedAt'] != null
+          ? DateTime.parse(json['startedAt'] as String)
+          : null,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
+      error: json['error'] as String?,
+      result: json['result'] as Map<String, dynamic>?,
+      parentTaskId: json['parentTaskId'] as String?,
+      meta: json['meta'] as Map<String, dynamic>?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{
+      'id': id,
+      'sessionId': sessionId,
+      'status': status.toJson(),
+      'createdAt': createdAt.toIso8601String(),
+    };
+    if (name != null) json['name'] = name;
+    if (progress != null) json['progress'] = progress!.toJson();
+    if (startedAt != null) json['startedAt'] = startedAt!.toIso8601String();
+    if (completedAt != null)
+      json['completedAt'] = completedAt!.toIso8601String();
+    if (error != null) json['error'] = error;
+    if (result != null) json['result'] = result;
+    if (parentTaskId != null) json['parentTaskId'] = parentTaskId;
+    if (meta != null) json['meta'] = meta;
+    return json;
+  }
+
+  TaskInfo copyWith({
+    String? id,
+    String? sessionId,
     String? name,
-
-    /// Current task status
-    @Default(TaskStatus.pending) TaskStatus status,
-
-    /// Task progress
+    TaskStatus? status,
     TaskProgress? progress,
-
-    /// Creation timestamp
-    required DateTime createdAt,
-
-    /// Start timestamp
+    DateTime? createdAt,
     DateTime? startedAt,
-
-    /// Completion timestamp
     DateTime? completedAt,
-
-    /// Error message if failed
     String? error,
-
-    /// Result data
     Map<String, dynamic>? result,
-
-    /// Parent task ID (for subtasks)
     String? parentTaskId,
-
-    /// Additional metadata
     Map<String, dynamic>? meta,
-  }) = _TaskInfo;
+  }) {
+    return TaskInfo(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      name: name ?? this.name,
+      status: status ?? this.status,
+      progress: progress ?? this.progress,
+      createdAt: createdAt ?? this.createdAt,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      error: error ?? this.error,
+      result: result ?? this.result,
+      parentTaskId: parentTaskId ?? this.parentTaskId,
+      meta: meta ?? this.meta,
+    );
+  }
 
-  factory TaskInfo.fromJson(Map<String, dynamic> json) =>
-      _$TaskInfoFromJson(json);
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TaskInfo &&
+        other.id == id &&
+        other.sessionId == sessionId &&
+        other.name == name &&
+        other.status == status &&
+        other.progress == progress &&
+        other.createdAt == createdAt &&
+        other.startedAt == startedAt &&
+        other.completedAt == completedAt &&
+        other.error == error &&
+        other.result == result &&
+        other.parentTaskId == parentTaskId &&
+        other.meta == meta;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    name,
+    status,
+    progress,
+    createdAt,
+    startedAt,
+    completedAt,
+    error,
+    result,
+    parentTaskId,
+    meta,
+  );
+
+  @override
+  String toString() =>
+      'TaskInfo(id: $id, sessionId: $sessionId, name: $name, status: $status, '
+      'progress: $progress, createdAt: $createdAt, startedAt: $startedAt, '
+      'completedAt: $completedAt, error: $error, result: $result, '
+      'parentTaskId: $parentTaskId, meta: $meta)';
 }
 
 /// Extension for TaskInfo convenience methods

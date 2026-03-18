@@ -1,16 +1,13 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'content_block.freezed.dart';
-part 'content_block.g.dart';
-
 /// Content block type enum
 enum ContentBlockType {
-  @JsonValue('text')
   text,
-  @JsonValue('image')
   image,
-  @JsonValue('audio')
-  audio,
+  audio;
+
+  String toJson() => name;
+
+  static ContentBlockType fromJson(String value) => ContentBlockType.values
+      .firstWhere((e) => e.name == value, orElse: () => ContentBlockType.text);
 }
 
 /// Base class for content blocks using sealed class pattern
@@ -41,40 +38,77 @@ sealed class ContentBlock {
 }
 
 /// Text content block
-@freezed
-class TextContentBlock extends ContentBlock with _$TextContentBlock {
-  const TextContentBlock._();
+class TextContentBlock extends ContentBlock {
+  final String text;
 
-  const factory TextContentBlock({required String text}) = _TextContentBlock;
+  const TextContentBlock({required this.text});
 
   @override
   ContentBlockType get type => ContentBlockType.text;
 
+  TextContentBlock copyWith({String? text}) =>
+      TextContentBlock(text: text ?? this.text);
+
   factory TextContentBlock.fromJson(Map<String, dynamic> json) =>
-      _$TextContentBlockFromJson(json);
+      TextContentBlock(text: json['text'] as String);
 
   @override
   Map<String, dynamic> toJson() => {'type': 'text', 'text': text};
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is TextContentBlock && text == other.text;
+
+  @override
+  int get hashCode => text.hashCode;
+
+  @override
+  String toString() => 'TextContentBlock(text: $text)';
 }
 
 /// Image content block with Base64 encoded data
-@freezed
-class ImageContentBlock extends ContentBlock with _$ImageContentBlock {
-  const ImageContentBlock._();
+class ImageContentBlock extends ContentBlock {
+  final String mimeType;
+  final String data;
+  final int? width;
+  final int? height;
+  final int? size;
 
-  const factory ImageContentBlock({
-    required String mimeType,
-    required String data,
-    int? width,
-    int? height,
-    int? size,
-  }) = _ImageContentBlock;
+  const ImageContentBlock({
+    required this.mimeType,
+    required this.data,
+    this.width,
+    this.height,
+    this.size,
+  });
 
   @override
   ContentBlockType get type => ContentBlockType.image;
 
+  ImageContentBlock copyWith({
+    String? mimeType,
+    String? data,
+    int? width,
+    int? height,
+    int? size,
+  }) {
+    return ImageContentBlock(
+      mimeType: mimeType ?? this.mimeType,
+      data: data ?? this.data,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      size: size ?? this.size,
+    );
+  }
+
   factory ImageContentBlock.fromJson(Map<String, dynamic> json) =>
-      _$ImageContentBlockFromJson(json);
+      ImageContentBlock(
+        mimeType: json['mimeType'] as String,
+        data: json['data'] as String,
+        width: json['width'] as int?,
+        height: json['height'] as int?,
+        size: json['size'] as int?,
+      );
 
   @override
   Map<String, dynamic> toJson() => {
@@ -85,25 +119,64 @@ class ImageContentBlock extends ContentBlock with _$ImageContentBlock {
     if (height != null) 'height': height,
     if (size != null) 'size': size,
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ImageContentBlock &&
+          mimeType == other.mimeType &&
+          data == other.data &&
+          width == other.width &&
+          height == other.height &&
+          size == other.size;
+
+  @override
+  int get hashCode => Object.hash(mimeType, data, width, height, size);
+
+  @override
+  String toString() =>
+      'ImageContentBlock(mimeType: $mimeType, data: ${data.length} chars, '
+      'width: $width, height: $height, size: $size)';
 }
 
 /// Audio content block with Base64 encoded data
-@freezed
-class AudioContentBlock extends ContentBlock with _$AudioContentBlock {
-  const AudioContentBlock._();
+class AudioContentBlock extends ContentBlock {
+  final String mimeType;
+  final String data;
+  final int? duration;
+  final int? size;
 
-  const factory AudioContentBlock({
-    required String mimeType,
-    required String data,
-    int? duration,
-    int? size,
-  }) = _AudioContentBlock;
+  const AudioContentBlock({
+    required this.mimeType,
+    required this.data,
+    this.duration,
+    this.size,
+  });
 
   @override
   ContentBlockType get type => ContentBlockType.audio;
 
+  AudioContentBlock copyWith({
+    String? mimeType,
+    String? data,
+    int? duration,
+    int? size,
+  }) {
+    return AudioContentBlock(
+      mimeType: mimeType ?? this.mimeType,
+      data: data ?? this.data,
+      duration: duration ?? this.duration,
+      size: size ?? this.size,
+    );
+  }
+
   factory AudioContentBlock.fromJson(Map<String, dynamic> json) =>
-      _$AudioContentBlockFromJson(json);
+      AudioContentBlock(
+        mimeType: json['mimeType'] as String,
+        data: json['data'] as String,
+        duration: json['duration'] as int?,
+        size: json['size'] as int?,
+      );
 
   @override
   Map<String, dynamic> toJson() => {
@@ -113,4 +186,21 @@ class AudioContentBlock extends ContentBlock with _$AudioContentBlock {
     if (duration != null) 'duration': duration,
     if (size != null) 'size': size,
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AudioContentBlock &&
+          mimeType == other.mimeType &&
+          data == other.data &&
+          duration == other.duration &&
+          size == other.size;
+
+  @override
+  int get hashCode => Object.hash(mimeType, data, duration, size);
+
+  @override
+  String toString() =>
+      'AudioContentBlock(mimeType: $mimeType, data: ${data.length} chars, '
+      'duration: $duration, size: $size)';
 }

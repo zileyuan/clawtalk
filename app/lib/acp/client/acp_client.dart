@@ -61,79 +61,8 @@ abstract class AcpClient {
   Future<void> close();
 }
 
-/// ACP message types
-
-/// Base class for ACP messages
-abstract class AcpMessage {
-  /// Message ID for correlation
-  String get id;
-
-  /// Message type (e.g., 'request', 'response', 'event')
-  String get type;
-
-  /// Convert to JSON
-  Map<String, dynamic> toJson();
-}
-
-/// ACP request message
-abstract class AcpRequest implements AcpMessage {
-  @override
-  String get type => 'request';
-
-  /// Request method/action
-  String get method;
-
-  /// Request parameters
-  Map<String, dynamic>? get params;
-}
-
-/// ACP response message
-abstract class AcpResponse implements AcpMessage {
-  @override
-  String get type => 'response';
-
-  /// Request ID this response is for
-  String get requestId;
-
-  /// Whether the request was successful
-  bool get success;
-
-  /// Response data (if successful)
-  Map<String, dynamic>? get data;
-
-  /// Error message (if failed)
-  String? get error;
-
-  /// Error code (if failed)
-  String? get errorCode;
-}
-
-/// ACP notification message (fire and forget)
-abstract class AcpNotification implements AcpMessage {
-  @override
-  String get type => 'notification';
-
-  /// Notification event name
-  String get event;
-
-  /// Notification payload
-  Map<String, dynamic>? get payload;
-}
-
-/// ACP event (incoming from server)
-abstract class AcpEvent {
-  /// Event name
-  String get name;
-
-  /// Event payload
-  Map<String, dynamic>? get data;
-
-  /// Event timestamp
-  DateTime get timestamp;
-}
-
 /// Callback for handling incoming messages
-typedef MessageHandler = void Function(AcpMessage message);
+typedef MessageHandler = void Function(AcpMessageBase message);
 
 /// Callback for handling connection errors
 typedef ErrorHandler = void Function(Object error, StackTrace stackTrace);

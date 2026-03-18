@@ -1,28 +1,34 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-
 import 'acp_request.dart';
 import 'acp_response.dart';
 import 'acp_event.dart';
 
-part 'acp_message.freezed.dart';
-
 /// Message type enumeration for ACP protocol
 enum AcpMessageType {
-  @JsonValue('req')
   request,
-  @JsonValue('res')
   response,
-  @JsonValue('event')
-  event,
+  event;
+
+  String toJson() => switch (this) {
+    request => 'req',
+    response => 'res',
+    event => 'event',
+  };
+
+  static AcpMessageType fromJson(String value) => switch (value) {
+    'req' => request,
+    'res' => response,
+    'event' => event,
+    _ => request,
+  };
 }
 
-/// Base sealed class for all ACP messages
+/// Base abstract class for all ACP messages
 ///
 /// ACP (Agent Client Protocol) uses three message types:
 /// - [AcpRequest]: Client-to-server requests
 /// - [AcpResponse]: Server-to-client responses
 /// - [AcpEvent]: Server-pushed events
-sealed class AcpMessage {
+abstract class AcpMessage {
   const AcpMessage();
 
   /// Message type identifier

@@ -24,5 +24,10 @@ class AppTheme {
     primaryContrastingColor: CupertinoColors.black,
     scaffoldBackgroundColor: CupertinoColors.black,
     barBackgroundColor: CupertinoColors.black,
+    textTheme: CupertinoTextThemeData(
+      textStyle: AppTextStyles.body,
+      navLargeTitleTextStyle: AppTextStyles.headline1,
+      navTitleTextStyle: AppTextStyles.headline3,
+    ),
   );
 }
