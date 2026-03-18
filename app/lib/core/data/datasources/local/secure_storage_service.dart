@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../errors/exceptions.dart';
 
@@ -20,6 +22,10 @@ class SecureStorageService {
             aOptions: AndroidOptions(encryptedSharedPreferences: true),
             iOptions: IOSOptions(
               accessibility: KeychainAccessibility.first_unlock,
+            ),
+            mOptions: MacOsOptions(
+              // Use default keychain access for sandboxed apps
+              synchronizable: false,
             ),
           );
 

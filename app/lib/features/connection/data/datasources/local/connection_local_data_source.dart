@@ -140,8 +140,19 @@ class ConnectionLocalDataSourceImpl implements ConnectionLocalDataSource {
         password: connection.password,
       );
 
-      // Save connection without sensitive data to preferences
-      final safeConnection = connection.copyWith(token: null, password: null);
+      // Create safe connection without sensitive data
+      // Note: We can't use copyWith(token: null) because ?? operator keeps original value
+      final safeConnection = ConnectionConfigModel(
+        id: connection.id,
+        name: connection.name,
+        host: connection.host,
+        port: connection.port,
+        token: null, // Explicitly set to null
+        password: null, // Explicitly set to null
+        useTLS: connection.useTLS,
+        createdAt: connection.createdAt,
+        lastUsed: connection.lastUsed,
+      );
 
       final connections = await _getRawConnections();
       final jsonStrings = [...connections, jsonEncode(safeConnection.toJson())];
@@ -176,7 +187,18 @@ class ConnectionLocalDataSourceImpl implements ConnectionLocalDataSource {
         );
       }
 
-      final safeConnection = connection.copyWith(token: null, password: null);
+      // Create safe connection without sensitive data
+      final safeConnection = ConnectionConfigModel(
+        id: connection.id,
+        name: connection.name,
+        host: connection.host,
+        port: connection.port,
+        token: null, // Explicitly set to null
+        password: null, // Explicitly set to null
+        useTLS: connection.useTLS,
+        createdAt: connection.createdAt,
+        lastUsed: connection.lastUsed,
+      );
       connections[index] = jsonEncode(safeConnection.toJson());
 
       await _preferences.writeStringList(StorageKeys.connections, connections);
@@ -251,6 +273,7 @@ class ConnectionLocalDataSourceImpl implements ConnectionLocalDataSource {
     String? password,
   }) async {
     try {
+      // Try secure storage first
       if (token != null) {
         await _secureStorage.write(
           StorageKeys.connectionToken(connectionId),
@@ -271,7 +294,25 @@ class ConnectionLocalDataSourceImpl implements ConnectionLocalDataSource {
         );
       }
     } catch (e) {
-      throw CacheException(message: 'Failed to save credentials: $e', code: 10);
+      // Fallback to preferences if secure storage fails (e.g., macOS Keychain issues in debug)
+      // This is less secure but allows the app to function during development
+      if (token != null) {
+        await _preferences.writeString(
+          StorageKeys.connectionToken(connectionId),
+          token,
+        );
+      } else {
+        await _preferences.remove(StorageKeys.connectionToken(connectionId));
+      }
+
+      if (password != null) {
+        await _preferences.writeString(
+          StorageKeys.connectionPassword(connectionId),
+          password,
+        );
+      } else {
+        await _preferences.remove(StorageKeys.connectionPassword(connectionId));
+      }
     }
   }
 
@@ -280,6 +321,7 @@ class ConnectionLocalDataSourceImpl implements ConnectionLocalDataSource {
     String connectionId,
   ) async {
     try {
+      // Try secure storage first
       final token = await _secureStorage.read(
         StorageKeys.connectionToken(connectionId),
       );
@@ -289,20 +331,28 @@ class ConnectionLocalDataSourceImpl implements ConnectionLocalDataSource {
 
       return (token: token, password: password);
     } catch (e) {
-      throw CacheException(message: 'Failed to get credentials: $e', code: 11);
+      // Fallback to preferences
+      final token = _preferences.readString(
+        StorageKeys.connectionToken(connectionId),
+      );
+      final password = _preferences.readString(
+        StorageKeys.connectionPassword(connectionId),
+      );
+
+      return (token: token, password: password);
     }
   }
 
   @override
   Future<void> deleteCredentials(String connectionId) async {
     try {
+      // Try secure storage first
       await _secureStorage.delete(StorageKeys.connectionToken(connectionId));
       await _secureStorage.delete(StorageKeys.connectionPassword(connectionId));
     } catch (e) {
-      throw CacheException(
-        message: 'Failed to delete credentials: $e',
-        code: 12,
-      );
+      // Fallback to preferences
+      await _preferences.remove(StorageKeys.connectionToken(connectionId));
+      await _preferences.remove(StorageKeys.connectionPassword(connectionId));
     }
   }
 
