@@ -1,5 +1,5 @@
-import '../../../core/errors/failures.dart';
-import '../entities/connection_config.dart';
+import 'package:clawtalk/core/errors/failures.dart';
+import 'package:clawtalk/features/connection/domain/entities/connection_config.dart';
 
 /// Repository interface for connection management.
 ///

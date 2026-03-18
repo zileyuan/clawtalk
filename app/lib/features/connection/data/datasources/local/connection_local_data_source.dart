@@ -1,9 +1,10 @@
 import 'dart:convert';
-import '../../../../core/constants/storage_keys.dart';
-import '../../../../core/data/datasources/local/preferences_service.dart';
-import '../../../../core/data/datasources/local/secure_storage_service.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../models/connection_config_model.dart';
+
+import 'package:clawtalk/core/constants/storage_keys.dart';
+import 'package:clawtalk/core/data/datasources/local/preferences_service.dart';
+import 'package:clawtalk/core/data/datasources/local/secure_storage_service.dart';
+import 'package:clawtalk/core/errors/exceptions.dart';
+import 'package:clawtalk/features/connection/data/models/connection_config_model.dart';
 
 /// Local data source for connection configurations.
 ///

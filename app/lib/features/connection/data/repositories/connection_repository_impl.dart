@@ -1,10 +1,10 @@
-import '../../../core/errors/error_handler.dart';
-import '../../../core/errors/exceptions.dart';
-import '../../../core/errors/failures.dart';
-import '../datasources/local/connection_local_data_source.dart';
-import '../models/connection_config_model.dart';
-import '../../domain/entities/connection_config.dart';
-import '../../domain/repositories/connection_repository.dart';
+import 'package:clawtalk/core/errors/error_handler.dart';
+import 'package:clawtalk/core/errors/exceptions.dart';
+import 'package:clawtalk/core/errors/failures.dart';
+import 'package:clawtalk/features/connection/data/datasources/local/connection_local_data_source.dart';
+import 'package:clawtalk/features/connection/data/models/connection_config_model.dart';
+import 'package:clawtalk/features/connection/domain/entities/connection_config.dart';
+import 'package:clawtalk/features/connection/domain/repositories/connection_repository.dart';
 
 /// Implementation of [ConnectionRepository].
 ///

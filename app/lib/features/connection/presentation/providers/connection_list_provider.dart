@@ -1,7 +1,8 @@
+import 'package:clawtalk/core/di/providers.dart';
+import 'package:clawtalk/features/connection/domain/entities/connection_config.dart';
+import 'package:clawtalk/features/connection/domain/repositories/connection_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-
-import '../../domain/entities/connection_config.dart';
 
 /// State for the connection list
 class ConnectionListState {
@@ -30,65 +31,72 @@ class ConnectionListState {
 
 /// Notifier for managing connection list state
 class ConnectionListNotifier extends StateNotifier<ConnectionListState> {
-  ConnectionListNotifier() : super(const ConnectionListState());
+  final ConnectionRepository _repository;
+
+  ConnectionListNotifier({required ConnectionRepository repository})
+    : _repository = repository,
+      super(const ConnectionListState());
 
   /// Load all saved connections
   Future<void> loadConnections() async {
     state = state.copyWith(isLoading: true, error: null);
 
-    try {
-      // TODO: Replace with actual repository call
-      // final connections = await _repository.getAllConnections();
-      // Simulating data for now
-      await Future.delayed(const Duration(milliseconds: 300));
-      final connections = <ConnectionConfig>[];
-      state = state.copyWith(connections: connections, isLoading: false);
-    } catch (e) {
+    final result = await _repository.getAllConnections();
+
+    if (result.failure != null) {
+      state = state.copyWith(error: result.failure!.message, isLoading: false);
+    } else {
       state = state.copyWith(
-        error: 'Failed to load connections: $e',
+        connections: result.connections ?? [],
         isLoading: false,
       );
     }
   }
 
   /// Add a new connection
-  Future<void> addConnection(ConnectionConfig config) async {
-    try {
-      // TODO: Replace with actual repository call
-      // await _repository.saveConnection(config);
-      final updatedConnections = [...state.connections, config];
-      state = state.copyWith(connections: updatedConnections);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to add connection: $e');
+  Future<bool> addConnection(ConnectionConfig config) async {
+    final failure = await _repository.saveConnection(config);
+
+    if (failure != null) {
+      state = state.copyWith(error: failure.message);
+      return false;
     }
+
+    final updatedConnections = [...state.connections, config];
+    state = state.copyWith(connections: updatedConnections);
+    return true;
   }
 
   /// Update an existing connection
-  Future<void> updateConnection(ConnectionConfig config) async {
-    try {
-      // TODO: Replace with actual repository call
-      // await _repository.updateConnection(config);
-      final updatedConnections = state.connections.map((c) {
-        return c.id == config.id ? config : c;
-      }).toList();
-      state = state.copyWith(connections: updatedConnections);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to update connection: $e');
+  Future<bool> updateConnection(ConnectionConfig config) async {
+    final failure = await _repository.updateConnection(config);
+
+    if (failure != null) {
+      state = state.copyWith(error: failure.message);
+      return false;
     }
+
+    final updatedConnections = state.connections.map((c) {
+      return c.id == config.id ? config : c;
+    }).toList();
+    state = state.copyWith(connections: updatedConnections);
+    return true;
   }
 
   /// Delete a connection
-  Future<void> deleteConnection(String id) async {
-    try {
-      // TODO: Replace with actual repository call
-      // await _repository.deleteConnection(id);
-      final updatedConnections = state.connections
-          .where((c) => c.id != id)
-          .toList();
-      state = state.copyWith(connections: updatedConnections);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to delete connection: $e');
+  Future<bool> deleteConnection(String id) async {
+    final failure = await _repository.deleteConnection(id);
+
+    if (failure != null) {
+      state = state.copyWith(error: failure.message);
+      return false;
     }
+
+    final updatedConnections = state.connections
+        .where((c) => c.id != id)
+        .toList();
+    state = state.copyWith(connections: updatedConnections);
+    return true;
   }
 
   /// Clear any error message
@@ -100,7 +108,9 @@ class ConnectionListNotifier extends StateNotifier<ConnectionListState> {
 /// Provider for connection list state
 final connectionListProvider =
     StateNotifierProvider<ConnectionListNotifier, ConnectionListState>(
-      (ref) => ConnectionListNotifier(),
+      (ref) => ConnectionListNotifier(
+        repository: ref.watch(connectionRepositoryProvider),
+      ),
     );
 
 /// Provider for sorted connections (by last used)

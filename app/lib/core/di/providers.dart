@@ -4,6 +4,9 @@ import 'package:logger/logger.dart';
 import '../../acp/client/acp_client.dart';
 import '../../acp/services/connection_service.dart';
 import '../../acp/services/message_service.dart';
+import '../../features/connection/data/datasources/local/connection_local_data_source.dart';
+import '../../features/connection/data/repositories/connection_repository_impl.dart';
+import '../../features/connection/domain/repositories/connection_repository.dart';
 import '../../platform/platform_interface.dart';
 import '../data/datasources/local/preferences_service.dart';
 import '../data/datasources/local/secure_storage_service.dart';
@@ -160,6 +163,27 @@ final acpClientFactoryProvider = Provider<AcpClient Function()>((ref) {
 });
 
 // =============================================================================
+// CONNECTION FEATURE PROVIDERS
+// =============================================================================
+
+/// Connection local data source provider
+final connectionLocalDataSourceProvider = Provider<ConnectionLocalDataSource>((
+  ref,
+) {
+  return ConnectionLocalDataSourceImpl(
+    preferences: ref.watch(preferencesProvider),
+    secureStorage: ref.watch(secureStorageProvider),
+  );
+});
+
+/// Connection repository provider
+final connectionRepositoryProvider = Provider<ConnectionRepository>((ref) {
+  return ConnectionRepositoryImpl(
+    localDataSource: ref.watch(connectionLocalDataSourceProvider),
+  );
+});
+
+// =============================================================================
 // UTILITY PROVIDERS
 // =============================================================================
 
@@ -215,7 +239,7 @@ final servicesReadyProvider = Provider<AsyncValue<bool>>((ref) {
 ///   );
 /// });
 /// ```
-List<Override> createTestOverrides({
+List<dynamic> createTestOverrides({
   SecureStorageService? secureStorage,
   PreferencesService? preferences,
   Logger? logger,
@@ -223,7 +247,7 @@ List<Override> createTestOverrides({
   MessageService? messageService,
   PlatformInterface? platformInterface,
 }) {
-  final overrides = <Override>[];
+  final overrides = <dynamic>[];
 
   if (secureStorage != null) {
     overrides.add(secureStorageProvider.overrideWithValue(secureStorage));
@@ -275,7 +299,7 @@ List<Override> createTestOverrides({
 ///   );
 /// });
 /// ```
-List<Override> createCompleteTestOverrides({
+List<dynamic> createCompleteTestOverrides({
   SecureStorageService? secureStorage,
   PreferencesService? preferences,
   Logger? logger,
