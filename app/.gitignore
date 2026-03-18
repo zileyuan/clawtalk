@@ -42,15 +42,45 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android build artifacts
+/android/.gradle/
+/android/.kotlin/
+/android/app/build/
+/android/build/
+*.apk
+*.aab
+
+# iOS build artifacts
+/ios/.symlinks/
+/ios/Flutter/App.framework
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/ephemeral/
+/ios/Pods/
+/ios/.generated/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS build artifacts
+/macos/.symlinks/
+/macos/Flutter/GeneratedPluginRegistrant.swift
+/macos/Flutter/ephemeral/
+/macos/Pods/
+/macos/.generated/
+
+# Windows build artifacts
+/windows/.symlinks/
+/windows/flutter/ephemeral/
+
 # Web related
 lib/generated_plugin_registrant.dart
 
-# Platform specific
-/android/
-/ios/
-/macos/
-/windows/
+# Linux (not used)
 /linux/
+
+# Web (not used)
 /web/
 
 # Coverage
