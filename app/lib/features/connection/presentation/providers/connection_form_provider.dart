@@ -19,7 +19,7 @@ class ConnectionFormState {
   const ConnectionFormState({
     this.name = '',
     this.host = '',
-    this.port = '8080',
+    this.port = '18789',
     this.token,
     this.password,
     this.useTLS = false,

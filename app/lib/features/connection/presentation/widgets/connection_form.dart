@@ -40,11 +40,16 @@ class _ConnectionFormState extends ConsumerState<ConnectionForm> {
 
     // Initialize with existing data if editing
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(connectionFormProvider.notifier).reset();
+
       if (widget.initialConnection != null) {
         ref
             .read(connectionFormProvider.notifier)
             .initializeWithConnection(widget.initialConnection!);
         _updateControllers(widget.initialConnection!);
+      } else {
+        // For new connections, sync controller initial values to state
+        ref.read(connectionFormProvider.notifier).setPort(_portController.text);
       }
     });
   }
@@ -248,6 +253,11 @@ class _ConnectionFormWithAuthState
             _showAuthSection = true;
           });
         }
+      } else {
+        // For new connections, sync controller initial values to state
+        // This ensures the default port '18789' from controller is saved
+        final notifier = ref.read(connectionFormProvider.notifier);
+        notifier.setPort(_portController.text);
       }
     });
   }
