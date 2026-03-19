@@ -21,17 +21,6 @@ class EditConnectionScreen extends ConsumerStatefulWidget {
 
 class _EditConnectionScreenState extends ConsumerState<EditConnectionScreen> {
   @override
-  void initState() {
-    super.initState();
-    // Initialize form with existing connection data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(connectionFormProvider.notifier)
-          .initializeWithConnection(widget.connection);
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final formState = ref.watch(connectionFormProvider);
 
@@ -84,7 +73,7 @@ class _EditConnectionScreenState extends ConsumerState<EditConnectionScreen> {
               const SizedBox(height: 16),
 
               // Form section
-              const ConnectionFormWithAuth(),
+              ConnectionFormWithAuth(initialConnection: widget.connection),
 
               // Delete button
               const SizedBox(height: 32),

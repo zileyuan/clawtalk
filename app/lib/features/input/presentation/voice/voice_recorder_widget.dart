@@ -7,7 +7,7 @@ import 'package:record/record.dart';
 import '../../../../core/themes/app_colors.dart';
 import '../../../../core/themes/app_text_styles.dart';
 import '../../../../core/constants/content_limits.dart';
-import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/logger.dart' as log;
 import 'voice_waveform.dart';
 
 /// Voice recorder widget with press-and-hold recording button,
@@ -97,7 +97,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
 
       _startTimer();
     } catch (e) {
-      Logger.error('Error starting recording: $e');
+      log.logger.e('Error starting recording: $e');
       _showError('Failed to start recording');
     }
   }
@@ -121,12 +121,12 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
       } else {
         // Delete the recording file if cancelled or too short
         if (path != null) {
-          await File(path).delete(ignore: true);
+          await File(path).delete();
         }
         widget.onRecordingCancelled?.call();
       }
     } catch (e) {
-      Logger.error('Error stopping recording: $e');
+      log.logger.e('Error stopping recording: $e');
     }
   }
 

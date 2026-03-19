@@ -1,5 +1,3 @@
-import 'package:camera/camera.dart';
-
 import '../platform_interface.dart';
 
 /// macOS implementation of PlatformPermissions
@@ -9,9 +7,12 @@ class MacOSPermissions implements PlatformPermissions {
   Future<PermissionStatus> checkPermission(PermissionType type) async {
     switch (type) {
       case PermissionType.camera:
-        return _checkCameraPermission();
+        // Camera permission is handled by the camera package when used
+        // We return notDetermined to indicate we need to check at use time
+        return PermissionStatus.notDetermined;
       case PermissionType.microphone:
-        return _checkMicrophonePermission();
+        // Microphone permission is handled by the record package when used
+        return PermissionStatus.notDetermined;
       case PermissionType.storage:
         // macOS doesn't require explicit storage permission
         return PermissionStatus.granted;
@@ -21,71 +22,22 @@ class MacOSPermissions implements PlatformPermissions {
     }
   }
 
-  Future<PermissionStatus> _checkCameraPermission() async {
-    try {
-      final status = await CameraPlatform.instance.getCameraPermissionStatus();
-      return _mapCameraPermissionStatus(status);
-    } catch (e) {
-      return PermissionStatus.notDetermined;
-    }
-  }
-
-  Future<PermissionStatus> _checkMicrophonePermission() async {
-    try {
-      // For microphone, we check via the audio recorder package
-      // The record package handles this internally
-      return PermissionStatus.notDetermined;
-    } catch (e) {
-      return PermissionStatus.notDetermined;
-    }
-  }
-
-  PermissionStatus _mapCameraPermissionStatus(CameraPermissionStatus status) {
-    switch (status) {
-      case CameraPermissionStatus.granted:
-        return PermissionStatus.granted;
-      case CameraPermissionStatus.denied:
-        return PermissionStatus.denied;
-      case CameraPermissionStatus.restricted:
-        return PermissionStatus.restricted;
-      default:
-        return PermissionStatus.notDetermined;
-    }
-  }
-
   @override
   Future<PermissionStatus> requestPermission(PermissionType type) async {
     switch (type) {
       case PermissionType.camera:
-        return _requestCameraPermission();
+        // Camera permission is requested by the camera package when used
+        // We return notDetermined to indicate the app should request when needed
+        return PermissionStatus.notDetermined;
       case PermissionType.microphone:
-        return _requestMicrophonePermission();
+        // Microphone permission is requested by the record package when used
+        return PermissionStatus.notDetermined;
       case PermissionType.storage:
         // macOS doesn't require explicit storage permission
         return PermissionStatus.granted;
       case PermissionType.notification:
         // Notification permission is handled by NotificationService
         return PermissionStatus.granted;
-    }
-  }
-
-  Future<PermissionStatus> _requestCameraPermission() async {
-    try {
-      final status = await CameraPlatform.instance.requestCameraPermission();
-      return _mapCameraPermissionStatus(status);
-    } catch (e) {
-      return PermissionStatus.denied;
-    }
-  }
-
-  Future<PermissionStatus> _requestMicrophonePermission() async {
-    try {
-      // The record package handles microphone permission
-      // We return not determined since we can't directly request it here
-      // The actual permission request happens when starting audio recording
-      return PermissionStatus.notDetermined;
-    } catch (e) {
-      return PermissionStatus.denied;
     }
   }
 

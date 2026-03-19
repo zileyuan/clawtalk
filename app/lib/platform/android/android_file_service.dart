@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:file_picker/file_picker.dart';
 
 import '../platform_interface.dart';
@@ -70,7 +70,7 @@ class AndroidFileService implements FileService {
   Future<String?> saveFile(FileSaveOptions options, Uint8List data) async {
     try {
       // On Android, we save to app's files directory
-      final directory = await getExternalStorageDirectory();
+      final directory = await path_provider.getExternalStorageDirectory();
       if (directory == null) {
         throw const CacheException(
           message: 'External storage not available',
@@ -149,13 +149,13 @@ class AndroidFileService implements FileService {
 
   @override
   Future<String> getDocumentsDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await path_provider.getApplicationDocumentsDirectory();
     return directory.path;
   }
 
   @override
   Future<String> getTemporaryDirectory() async {
-    final directory = await getTemporaryDirectory();
+    final directory = await path_provider.getTemporaryDirectory();
     return directory.path;
   }
 

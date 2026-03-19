@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart' as img;
 
 import '../../../../core/themes/app_colors.dart';
 import '../../../../core/themes/app_text_styles.dart';
-import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/logger.dart' as log;
 import '../../domain/entities/image_input.dart';
 
 /// Image picker widget with camera, gallery, drag & drop, and paste support
@@ -47,15 +47,15 @@ class ImagePickerWidget extends StatefulWidget {
 }
 
 class _ImagePickerWidgetState extends State<ImagePickerWidget> {
-  final ImagePicker _picker = ImagePicker();
+  final img.ImagePicker _picker = img.ImagePicker();
   bool _isLoading = false;
 
   Future<void> _pickFromCamera() async {
     try {
       setState(() => _isLoading = true);
 
-      final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera,
+      final img.XFile? photo = await _picker.pickImage(
+        source: img.ImageSource.camera,
         maxWidth: 4096,
         maxHeight: 4096,
         imageQuality: 90,
@@ -65,7 +65,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
         await _processImage(photo, ImageSource.camera);
       }
     } catch (e) {
-      Logger.error('Error picking from camera: $e');
+      log.logger.e('Error picking from camera: $e');
       _showError('Failed to capture photo');
     } finally {
       setState(() => _isLoading = false);
@@ -76,7 +76,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
     try {
       setState(() => _isLoading = true);
 
-      final List<XFile> photos = await _picker.pickMultiImage(
+      final List<img.XFile> photos = await _picker.pickMultiImage(
         maxWidth: 4096,
         maxHeight: 4096,
         imageQuality: 90,
@@ -95,21 +95,24 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
         }
       }
     } catch (e) {
-      Logger.error('Error picking from gallery: $e');
+      log.logger.e('Error picking from gallery: $e');
       _showError('Failed to select images');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _processImage(XFile file, ImageSource source) async {
+  Future<void> _processImage(img.XFile file, ImageSource source) async {
     final image = await _createImageInput(file, source);
     if (image != null) {
       widget.onImagesSelected([image]);
     }
   }
 
-  Future<ImageInput?> _createImageInput(XFile file, ImageSource source) async {
+  Future<ImageInput?> _createImageInput(
+    img.XFile file,
+    ImageSource source,
+  ) async {
     try {
       final filePath = file.path;
       final fileStat = await File(filePath).stat();
@@ -137,7 +140,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
         source: source,
       );
     } catch (e) {
-      Logger.error('Error creating image input: $e');
+      log.logger.e('Error creating image input: $e');
       return null;
     }
   }
@@ -151,7 +154,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
         'Paste image from clipboard is not supported on this platform',
       );
     } catch (e) {
-      Logger.error('Error pasting from clipboard: $e');
+      log.logger.e('Error pasting from clipboard: $e');
     }
   }
 
@@ -192,8 +195,8 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
             _DragDropZone(
               onDrop: (paths) async {
                 final images = <ImageInput>[];
-                for (final path in paths.take(widget.maxImages)) {
-                  final file = XFile(path);
+                for (final p in paths.take(widget.maxImages)) {
+                  final file = img.XFile(p);
                   final image = await _createImageInput(
                     file,
                     ImageSource.dragDrop,
@@ -325,7 +328,6 @@ class _DragDropZoneState extends State<_DragDropZone> {
             width: _isDragging ? 2 : 1,
             style: BorderStyle.solid,
           ),
-          borderRadius: BorderRadius.circular(10),
         ),
         child: Center(
           child: Column(

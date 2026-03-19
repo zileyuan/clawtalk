@@ -26,7 +26,63 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(connectionListProvider.notifier).loadConnections();
       ref.read(connectionStatusProvider.notifier).startMonitoring();
+
+      // DEBUG: Auto-test Gateway connection
+      _autoTestGatewayConnection();
     });
+  }
+
+  /// Auto-test Gateway connection for debugging
+  Future<void> _autoTestGatewayConnection() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    print('[DEBUG] ========== Auto-testing Gateway Connection ==========');
+
+    final connection = ConnectionConfig(
+      id: 'localhost-debug',
+      name: 'Local Gateway',
+      host: '127.0.0.1',
+      port: 18789,
+      createdAt: DateTime.now(),
+    );
+
+    print('[DEBUG] Connecting to ${connection.host}:${connection.port}...');
+
+    try {
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(connection);
+      print('[DEBUG] ========== ✅ CONNECTED SUCCESSFULLY! ==========');
+    } catch (e) {
+      print('[DEBUG] ========== ❌ CONNECTION FAILED: $e ==========');
+    }
+  }
+
+  /// Debug: Auto-connect to localhost Gateway
+  Future<void> _debugAutoConnect() async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Check if Gateway is running on localhost
+    final connection = ConnectionConfig(
+      id: 'localhost-debug',
+      name: 'Local Gateway',
+      host: '127.0.0.1',
+      port: 18789,
+      createdAt: DateTime.now(),
+    );
+
+    print('[DEBUG] Attempting to connect to localhost:18789...');
+
+    try {
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(connection);
+      print('[DEBUG] Connected successfully!');
+    } catch (e) {
+      print('[DEBUG] Connection failed: $e');
+    }
   }
 
   Future<void> _onRefresh() async {
@@ -115,6 +171,11 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
           CupertinoButton.filled(
             onPressed: () => _navigateToAdd(context),
             child: const Text('Add Connection'),
+          ),
+          const SizedBox(height: 12),
+          CupertinoButton(
+            onPressed: () => _quickConnectLocalhost(context),
+            child: const Text('Test Gateway Connection (localhost:18789)'),
           ),
         ],
       ),
@@ -251,5 +312,64 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
         builder: (context) => SessionListScreen(connectionId: connectionId),
       ),
     );
+  }
+
+  /// Quick connect to localhost Gateway for debugging
+  Future<void> _quickConnectLocalhost(BuildContext context) async {
+    print('[DEBUG] ========== Testing Gateway Connection ==========');
+
+    // Create a temporary connection config for localhost
+    final connection = ConnectionConfig(
+      id: 'localhost-debug',
+      name: 'Local Gateway',
+      host: '127.0.0.1',
+      port: 18789,
+      createdAt: DateTime.now(),
+    );
+
+    print('[DEBUG] Connecting to ${connection.host}:${connection.port}...');
+
+    try {
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(connection);
+      print('[DEBUG] ========== CONNECTED SUCCESSFULLY! ==========');
+
+      if (mounted) {
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('✅ Connected!'),
+            content: const Text(
+              'Successfully connected to OpenClaw Gateway!\n\nGateway Protocol handshake completed.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      print('[DEBUG] ========== CONNECTION FAILED: $e ==========');
+
+      if (mounted) {
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connection Failed'),
+            content: Text(e.toString()),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 }

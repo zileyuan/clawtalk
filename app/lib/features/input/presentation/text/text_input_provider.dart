@@ -56,6 +56,9 @@ class TextInputState {
   int get remainingCharacters =>
       input.maxLength != null ? input.maxLength! - characterCount : -1;
 
+  /// Returns true if the input is valid
+  bool get isValid => !hasError && hasContent;
+
   TextInputState copyWith({
     TextInput? input,
     bool? isFocused,

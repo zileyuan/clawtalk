@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:clawtalk/core/providers/connection_provider.dart';
+import 'package:clawtalk/gateway/protocol/gateway_request.dart';
 import '../../domain/entities/session.dart';
 
 /// Provider for session management
 final sessionProvider = StateNotifierProvider<SessionNotifier, SessionState>(
-  (ref) => SessionNotifier(),
+  (ref) => SessionNotifier(ref),
 );
 
 /// Provider for the list of sessions
@@ -82,26 +85,45 @@ class SessionState {
 
 /// Notifier for managing sessions
 class SessionNotifier extends StateNotifier<SessionState> {
+  final Ref _ref;
   final _uuid = const Uuid();
+  final Logger _logger = Logger();
 
-  SessionNotifier() : super(const SessionState());
+  SessionNotifier(this._ref) : super(const SessionState());
 
-  /// Load all sessions
+  /// Load all sessions from Gateway
   Future<void> loadSessions() async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // TODO: Replace with actual API call
-      // final sessions = await api.getSessions();
+      final connectionManager = _ref.read(connectionManagerProvider);
+      if (!connectionManager.isConnected) {
+        _logger.w('Not connected to Gateway');
+        state = state.copyWith(sessions: [], isLoading: false);
+        return;
+      }
 
-      // Simulated delay
-      await Future.delayed(const Duration(milliseconds: 300));
+      final client = _ref.read(connectionManagerProvider.notifier).client;
+      final request = GatewayRequestFactory.sessionsList();
+      final response = await client.sendRequest(request);
 
-      // For now, return empty list
-      const sessions = <Session>[];
-
-      state = state.copyWith(sessions: sessions, isLoading: false);
+      if (response.ok && response.payload != null) {
+        final sessionsJson =
+            response.payload!['sessions'] as List? ??
+            response.payload!['data'] as List? ??
+            [];
+        final sessions = sessionsJson
+            .map(
+              (json) => Session.fromGatewayJson(json as Map<String, dynamic>),
+            )
+            .toList();
+        state = state.copyWith(sessions: sessions, isLoading: false);
+        _logger.i('Loaded ${sessions.length} sessions from Gateway');
+      } else {
+        state = state.copyWith(sessions: [], isLoading: false);
+      }
     } catch (e) {
+      _logger.e('Failed to load sessions: $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load sessions: $e',
@@ -110,6 +132,9 @@ class SessionNotifier extends StateNotifier<SessionState> {
   }
 
   /// Create a new session
+  /// Note: Gateway doesn't have explicit session creation.
+  /// Sessions are created implicitly via chat.send.
+  /// This method creates a local session for UI purposes.
   Future<Session?> createSession({
     required String agentId,
     required String connectionId,
@@ -117,28 +142,30 @@ class SessionNotifier extends StateNotifier<SessionState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      // Generate a session key for Gateway
+      // Format: agent:<agentId>:main for direct agent sessions
+      final sessionKey = 'agent:$agentId:main';
+
       final session = Session(
-        id: _uuid.v4(),
+        id: sessionKey,
         agentId: agentId,
         connectionId: connectionId,
         status: SessionStatus.active,
         createdAt: DateTime.now(),
       );
 
-      // TODO: Replace with actual API call
-      // final createdSession = await api.createSession(session);
-
-      // Simulated delay
-      await Future.delayed(const Duration(milliseconds: 200));
-
+      // Add to local state
+      // The session will be activated when first chat.send is called
       state = state.copyWith(
         sessions: [...state.sessions, session],
         activeSession: session,
         isLoading: false,
       );
 
+      _logger.i('Created local session: $sessionKey');
       return session;
     } catch (e) {
+      _logger.e('Failed to create session: $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to create session: $e',
@@ -164,6 +191,21 @@ class SessionNotifier extends StateNotifier<SessionState> {
   /// End a session
   Future<void> endSession(String sessionId) async {
     try {
+      // Try to reset session on Gateway
+      final connectionManager = _ref.read(connectionManagerProvider);
+      if (connectionManager.isConnected) {
+        try {
+          final client = _ref.read(connectionManagerProvider.notifier).client;
+          final request = GatewayRequestFactory.sessionsReset(
+            sessionId: sessionId,
+          );
+          await client.sendRequest(request);
+          _logger.i('Reset session on Gateway: $sessionId');
+        } catch (e) {
+          _logger.w('Failed to reset session on Gateway: $e');
+        }
+      }
+
       final updatedSessions = state.sessions.map((s) {
         if (s.id == sessionId) {
           return s.copyWith(
@@ -174,9 +216,6 @@ class SessionNotifier extends StateNotifier<SessionState> {
         return s;
       }).toList();
 
-      // TODO: Replace with actual API call
-      // await api.endSession(sessionId);
-
       state = state.copyWith(
         sessions: updatedSessions,
         activeSession: state.activeSession?.id == sessionId
@@ -184,6 +223,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
             : state.activeSession,
       );
     } catch (e) {
+      _logger.e('Failed to end session: $e');
       state = state.copyWith(error: 'Failed to end session: $e');
     }
   }

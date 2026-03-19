@@ -8,6 +8,9 @@ import 'package:record/record.dart';
 import '../platform_interface.dart';
 import '../../core/errors/exceptions.dart';
 
+/// Processing state for audio playback
+enum ProcessingState { idle, loading, buffering, ready, completed }
+
 /// iOS implementation of AudioService using record and audioplayers packages
 class IOSAudioService implements AudioService {
   final AudioRecorder _audioRecorder = AudioRecorder();
@@ -87,7 +90,8 @@ class IOSAudioService implements AudioService {
       case AudioFormat.aac:
         return AudioEncoder.aacLc;
       case AudioFormat.mp3:
-        return AudioEncoder.mp3;
+        // MP3 not supported for recording, use AAC as fallback
+        return AudioEncoder.aacLc;
       case AudioFormat.wav:
         return AudioEncoder.wav;
       case AudioFormat.m4a:
@@ -194,17 +198,22 @@ class IOSAudioService implements AudioService {
   }
 
   void _updatePlaybackState(PlayerState state) {
-    switch (state.processingState) {
-      case ProcessingState.idle:
+    // PlayerState is an enum in audioplayers
+    // We handle state changes through event listeners instead
+    switch (state) {
+      case PlayerState.stopped:
         _setPlaybackState(AudioPlaybackState.stopped);
         break;
-      case ProcessingState.loading:
-      case ProcessingState.buffering:
-      case ProcessingState.ready:
-        // Do nothing for these states
+      case PlayerState.paused:
+        _setPlaybackState(AudioPlaybackState.paused);
         break;
-      case ProcessingState.completed:
+      case PlayerState.playing:
+        _setPlaybackState(AudioPlaybackState.playing);
+        break;
+      case PlayerState.completed:
         _setPlaybackState(AudioPlaybackState.completed);
+        break;
+      default:
         break;
     }
   }

@@ -70,4 +70,14 @@ class AgentCapability {
     }
     return hash;
   }
+
+  /// Create AgentCapability from Gateway API response
+  factory AgentCapability.fromGatewayJson(Map<String, dynamic> json) {
+    return AgentCapability(
+      id: json['id'] as String? ?? json['name'] as String? ?? '',
+      name: json['name'] as String? ?? json['id'] as String? ?? 'Unknown',
+      description: json['description'] as String?,
+      parameters: json['parameters'] as Map<String, dynamic>?,
+    );
+  }
 }

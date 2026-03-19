@@ -250,7 +250,7 @@ class AppCupertinoTextFormField extends FormField<String> {
     super.validator,
     super.initialValue,
     super.autovalidateMode,
-    TextEditingController? controller,
+    this.controller,
     String? placeholder,
     Widget? prefix,
     Widget? suffix,
@@ -277,7 +277,7 @@ class AppCupertinoTextFormField extends FormField<String> {
            final state = field as _AppCupertinoTextFormFieldState;
 
            return AppCupertinoTextField(
-             controller: state._controller,
+             controller: state._effectiveController,
              placeholder: placeholder,
              errorText: field.errorText,
              prefix: prefix,
@@ -306,6 +306,9 @@ class AppCupertinoTextFormField extends FormField<String> {
            );
          },
        );
+
+  /// Controller for the text field.
+  final TextEditingController? controller;
 
   @override
   FormFieldState<String> createState() => _AppCupertinoTextFormFieldState();

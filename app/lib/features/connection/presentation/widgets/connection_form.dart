@@ -218,14 +218,36 @@ class _ConnectionFormWithAuthState
     _passwordController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Reset form first to clear any previous state
+      ref.read(connectionFormProvider.notifier).reset();
+
       if (widget.initialConnection != null) {
+        debugPrint(
+          '[EDIT_FORM] Initializing with connection: ${widget.initialConnection!.name}',
+        );
+        debugPrint('[EDIT_FORM] Token: ${widget.initialConnection!.token}');
+        debugPrint(
+          '[EDIT_FORM] Password: ${widget.initialConnection!.password}',
+        );
+
         ref
             .read(connectionFormProvider.notifier)
             .initializeWithConnection(widget.initialConnection!);
         _updateControllers(widget.initialConnection!);
-        _showAuthSection =
-            widget.initialConnection?.token != null ||
-            widget.initialConnection?.password != null;
+
+        // Check if we should show auth section (non-empty token or password)
+        final hasToken = widget.initialConnection!.token?.isNotEmpty ?? false;
+        final hasPassword =
+            widget.initialConnection!.password?.isNotEmpty ?? false;
+        debugPrint(
+          '[EDIT_FORM] hasToken: $hasToken, hasPassword: $hasPassword',
+        );
+
+        if (hasToken || hasPassword) {
+          setState(() {
+            _showAuthSection = true;
+          });
+        }
       }
     });
   }
@@ -246,6 +268,9 @@ class _ConnectionFormWithAuthState
     _portController.text = config.port.toString();
     _tokenController.text = config.token ?? '';
     _passwordController.text = config.password ?? '';
+    debugPrint(
+      '[EDIT_FORM] Controllers updated - token: "${_tokenController.text}", password: "${_passwordController.text}"',
+    );
   }
 
   @override

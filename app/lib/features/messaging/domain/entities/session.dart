@@ -59,4 +59,29 @@ class Session {
     return 'Session(id: $id, agentId: $agentId, connectionId: $connectionId, '
         'status: $status, createdAt: $createdAt, endedAt: $endedAt)';
   }
+
+  /// Create Session from Gateway API response
+  factory Session.fromGatewayJson(Map<String, dynamic> json) {
+    final statusStr = json['status'] as String? ?? 'active';
+    final status = switch (statusStr.toLowerCase()) {
+      'active' || 'running' => SessionStatus.active,
+      'paused' => SessionStatus.paused,
+      'ended' || 'completed' => SessionStatus.ended,
+      'error' => SessionStatus.error,
+      _ => SessionStatus.active,
+    };
+
+    return Session(
+      id: json['id'] as String? ?? json['sessionId'] as String? ?? '',
+      agentId: json['agentId'] as String? ?? json['agent'] as String? ?? '',
+      connectionId: json['connectionId'] as String? ?? '',
+      status: status,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      endedAt: json['endedAt'] != null
+          ? DateTime.tryParse(json['endedAt'] as String)
+          : null,
+    );
+  }
 }

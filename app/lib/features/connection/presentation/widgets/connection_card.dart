@@ -8,6 +8,7 @@ import '../../domain/entities/connection_config.dart';
 import '../../domain/entities/connection_status.dart';
 import '../providers/connection_list_provider.dart';
 import '../providers/connection_status_provider.dart';
+import '../screens/edit_connection_screen.dart';
 import 'connection_actions.dart';
 import 'connection_status_indicator.dart';
 
@@ -168,12 +169,11 @@ class ConnectionCard extends ConsumerWidget {
   }
 
   void _navigateToEdit(BuildContext context) {
-    // TODO: Navigate to edit screen
-    // Navigator.of(context).push(
-    //   CupertinoPageRoute(
-    //     builder: (context) => EditConnectionScreen(connection: connection),
-    //   ),
-    // );
+    Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (context) => EditConnectionScreen(connection: connection),
+      ),
+    );
   }
 
   void _duplicateConnection(WidgetRef ref) {

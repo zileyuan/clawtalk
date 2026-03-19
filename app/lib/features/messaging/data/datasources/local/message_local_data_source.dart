@@ -1,9 +1,9 @@
 import 'dart:convert';
-import '../../../../core/constants/storage_keys.dart';
-import '../../../../core/data/datasources/local/preferences_service.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../models/message_model.dart';
-import '../models/session_model.dart';
+import 'package:clawtalk/core/constants/storage_keys.dart';
+import 'package:clawtalk/core/data/datasources/local/preferences_service.dart';
+import 'package:clawtalk/core/errors/exceptions.dart';
+import 'package:clawtalk/features/messaging/data/models/message_model.dart';
+import 'package:clawtalk/features/messaging/data/models/session_model.dart';
 
 /// Local data source for messages and sessions.
 ///

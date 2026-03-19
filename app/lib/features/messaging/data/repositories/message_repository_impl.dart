@@ -1,10 +1,10 @@
-import '../../../core/errors/error_handler.dart';
-import '../../../core/errors/exceptions.dart';
-import '../../../core/errors/failures.dart';
-import '../data/datasources/local/message_local_data_source.dart';
-import '../data/models/message_model.dart';
-import '../data/models/session_model.dart';
-import '../domain/repositories/message_repository.dart';
+import 'package:clawtalk/core/errors/error_handler.dart';
+import 'package:clawtalk/core/errors/exceptions.dart';
+import 'package:clawtalk/core/errors/failures.dart';
+import 'package:clawtalk/features/messaging/data/datasources/local/message_local_data_source.dart';
+import 'package:clawtalk/features/messaging/data/models/message_model.dart';
+import 'package:clawtalk/features/messaging/data/models/session_model.dart';
+import 'package:clawtalk/features/messaging/domain/repositories/message_repository.dart';
 
 /// Implementation of [MessageRepository].
 ///

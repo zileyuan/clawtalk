@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 import '../../../../core/themes/app_colors.dart';
 import '../../../../core/themes/app_text_styles.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/logger.dart' as log;
 import 'voice_waveform.dart';
 
 /// Voice player widget for playing recorded audio
@@ -136,7 +137,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
         await _audioPlayer.play(DeviceFileSource(widget.audioPath));
       }
     } catch (e) {
-      Logger.error('Error playing audio: $e');
+      log.logger.e('Error playing audio: $e');
       _showError('Failed to play audio');
     }
   }
@@ -145,7 +146,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
     try {
       await _audioPlayer.pause();
     } catch (e) {
-      Logger.error('Error pausing audio: $e');
+      log.logger.e('Error pausing audio: $e');
     }
   }
 
@@ -157,7 +158,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
       });
       widget.onPlaybackCancelled?.call();
     } catch (e) {
-      Logger.error('Error stopping audio: $e');
+      log.logger.e('Error stopping audio: $e');
     }
   }
 
@@ -165,7 +166,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
     try {
       await _audioPlayer.seek(position);
     } catch (e) {
-      Logger.error('Error seeking audio: $e');
+      log.logger.e('Error seeking audio: $e');
     }
   }
 
@@ -176,7 +177,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
         _playbackSpeed = speed;
       });
     } catch (e) {
-      Logger.error('Error setting playback speed: $e');
+      log.logger.e('Error setting playback speed: $e');
     }
   }
 

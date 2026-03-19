@@ -142,7 +142,7 @@ Future<void> showConnectionActions({
     if (isConnected && onDisconnect != null)
       ActionSheetItem(
         label: 'Disconnect',
-        icon: CupertinoIcons.link_slash,
+        icon: CupertinoIcons.link,
         onPressed: onDisconnect,
       ),
     ActionSheetItem(

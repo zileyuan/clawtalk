@@ -1,6 +1,6 @@
-import '../../../core/errors/failures.dart';
-import '../data/models/message_model.dart';
-import '../data/models/session_model.dart';
+import 'package:clawtalk/core/errors/failures.dart';
+import 'package:clawtalk/features/messaging/data/models/message_model.dart';
+import 'package:clawtalk/features/messaging/data/models/session_model.dart';
 
 /// Repository interface for messaging.
 ///

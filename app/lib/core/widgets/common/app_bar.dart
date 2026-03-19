@@ -25,7 +25,7 @@ class AppNavigationBar extends StatelessWidget
   });
 
   /// Creates a navigation bar with a title.
-  const AppNavigationBar.title({
+  AppNavigationBar.title({
     super.key,
     required String title,
     this.leading,
@@ -56,14 +56,13 @@ class AppNavigationBar extends StatelessWidget
        backgroundColor = CupertinoColors.transparent;
 
   /// Creates a navigation bar for modal presentation.
-  const AppNavigationBar.modal({
+  AppNavigationBar.modal({
     super.key,
     String? title,
     Widget? leading,
     required Widget doneButton,
     this.backgroundColor,
-  }) : leading =
-           leading ?? const CupertinoNavigationBarBackButton(label: 'Cancel'),
+  }) : leading = leading ?? const CupertinoNavigationBarBackButton(),
        middle = title != null ? Text(title) : null,
        trailing = doneButton,
        previousPageTitle = null,

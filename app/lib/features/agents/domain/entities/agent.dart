@@ -96,4 +96,33 @@ class Agent {
     }
     return true;
   }
+
+  /// Create Agent from Gateway API response
+  factory Agent.fromGatewayJson(Map<String, dynamic> json) {
+    final statusStr = json['status'] as String? ?? 'offline';
+    final status = switch (statusStr.toLowerCase()) {
+      'available' || 'ready' => AgentStatus.available,
+      'busy' || 'running' => AgentStatus.busy,
+      'error' => AgentStatus.error,
+      _ => AgentStatus.offline,
+    };
+
+    return Agent(
+      id: json['id'] as String? ?? json['agentId'] as String? ?? '',
+      name: json['name'] as String? ?? json['id'] as String? ?? 'Unknown',
+      description: json['description'] as String?,
+      capabilities:
+          (json['capabilities'] as List<dynamic>?)
+              ?.map(
+                (c) =>
+                    AgentCapability.fromGatewayJson(c as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
+      status: status,
+      lastActive: json['lastActive'] != null
+          ? DateTime.tryParse(json['lastActive'] as String)
+          : null,
+    );
+  }
 }

@@ -3,130 +3,132 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:logger/logger.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '../../features/connection/domain/entities/connection_config.dart';
+import 'package:clawtalk/gateway/client/gateway_client.dart';
+import 'package:clawtalk/gateway/client/gateway_client_impl.dart';
+import 'package:clawtalk/gateway/client/gateway_connection_state.dart';
+import 'package:clawtalk/gateway/protocol/gateway_event.dart';
+import 'package:clawtalk/features/connection/domain/entities/connection_config.dart';
+import 'package:clawtalk/acp/client/connection_config.dart' as acp;
+import 'package:clawtalk/core/constants/api_constants.dart';
+import 'package:clawtalk/core/constants/app_constants.dart';
 
-/// Connection status
-enum ConnectionStatus {
-  disconnected,
-  connecting,
-  connected,
-  disconnecting,
-  error,
+/// Extension to add Gateway-specific functionality to ConnectionConfig
+extension ConnectionConfigGatewayX on ConnectionConfig {
+  /// Build WebSocket URI from config
+  Uri get wsUri {
+    final scheme = useTLS ? 'wss' : 'ws';
+    return Uri.parse('$scheme://$host:$port${ApiConstants.wsPath}');
+  }
+
+  /// Convert to ACP-compatible ConnectionConfig
+  /// (used internally by GatewayClient)
+  acp.ConnectionConfig toAcpConfig() => acp.ConnectionConfig(
+    id: id,
+    name: name,
+    host: host,
+    port: port,
+    token: token,
+    password: password,
+    useTLS: useTLS,
+    connectionTimeout: AppConstants.connectionTimeout,
+    heartbeatInterval: AppConstants.heartbeatInterval,
+  );
 }
 
 /// Connection manager state
 class ConnectionManagerState {
-  final ConnectionStatus status;
+  final GatewayConnectionStatus status;
   final String? activeConnectionId;
   final String? errorMessage;
   final DateTime? lastConnected;
 
   const ConnectionManagerState({
-    this.status = ConnectionStatus.disconnected,
+    this.status = GatewayConnectionStatus.disconnected,
     this.activeConnectionId,
     this.errorMessage,
     this.lastConnected,
   });
 
   ConnectionManagerState copyWith({
-    ConnectionStatus? status,
+    GatewayConnectionStatus? status,
     String? activeConnectionId,
     String? errorMessage,
     DateTime? lastConnected,
-  }) {
-    return ConnectionManagerState(
-      status: status ?? this.status,
-      activeConnectionId: activeConnectionId ?? this.activeConnectionId,
-      errorMessage: errorMessage,
-      lastConnected: lastConnected ?? this.lastConnected,
-    );
-  }
+  }) => ConnectionManagerState(
+    status: status ?? this.status,
+    activeConnectionId: activeConnectionId ?? this.activeConnectionId,
+    errorMessage: errorMessage,
+    lastConnected: lastConnected ?? this.lastConnected,
+  );
 
-  bool get isConnected => status == ConnectionStatus.connected;
-  bool get isConnecting => status == ConnectionStatus.connecting;
-  bool get hasError => status == ConnectionStatus.error;
+  bool get isConnected => status == GatewayConnectionStatus.connected;
+  bool get isConnecting =>
+      status == GatewayConnectionStatus.connecting ||
+      status == GatewayConnectionStatus.awaitingChallenge ||
+      status == GatewayConnectionStatus.authenticating;
+  bool get hasError => status == GatewayConnectionStatus.error;
 }
 
-/// Simple WebSocket connection manager
+/// Gateway connection manager
 class ConnectionManagerNotifier extends StateNotifier<ConnectionManagerState> {
   final Logger _logger = Logger();
-  WebSocketChannel? _channel;
-  StreamSubscription? _subscription;
-  ConnectionConfig? _currentConfig;
+  GatewayClient? _client;
+  StreamSubscription<GatewayConnectionState>? _stateSubscription;
+  StreamSubscription<GatewayEvent>? _eventSubscription;
 
-  final _messageController = StreamController<String>.broadcast();
-  Stream<String> get messages => _messageController.stream;
+  final _eventController = StreamController<GatewayEvent>.broadcast();
+  Stream<GatewayEvent> get events => _eventController.stream;
 
   ConnectionManagerNotifier() : super(const ConnectionManagerState());
 
-  /// Connect to gateway
+  /// Connect to Gateway
   Future<void> connect(ConnectionConfig config) async {
-    if (state.isConnecting || state.isConnected) {
+    if (state.isConnected || state.isConnecting) {
       _logger.w('Already connected or connecting');
       return;
     }
 
     state = ConnectionManagerState(
-      status: ConnectionStatus.connecting,
+      status: GatewayConnectionStatus.connecting,
       activeConnectionId: config.id,
     );
 
     try {
-      final uri = Uri.parse('ws://${config.host}:${config.port}/ws');
-      _logger.i('Connecting to $uri');
+      _client = GatewayClientImpl();
 
-      _channel = WebSocketChannel.connect(uri, protocols: ['acp-v1']);
-      _currentConfig = config;
-
-      // Wait for connection
-      await _channel!.ready.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Connection timeout'),
-      );
-
-      // Listen for messages
-      _subscription = _channel!.stream.listen(
-        (data) {
-          _logger.d('Received: $data');
-          _messageController.add(data.toString());
-        },
-        onError: (error) {
-          _logger.e('WebSocket error: $error');
+      // Subscribe to state changes
+      _stateSubscription = _client!.connectionState.listen(
+        (gatewayState) {
           state = ConnectionManagerState(
-            status: ConnectionStatus.error,
+            status: gatewayState.status,
+            activeConnectionId: config.id,
+            errorMessage: gatewayState.errorMessage,
+            lastConnected: gatewayState.lastConnected,
+          );
+        },
+        onError: (Object error) {
+          _logger.e('Connection error: $error');
+          state = ConnectionManagerState(
+            status: GatewayConnectionStatus.error,
             activeConnectionId: config.id,
             errorMessage: error.toString(),
           );
         },
-        onDone: () {
-          _logger.i('WebSocket closed');
-          state = ConnectionManagerState(
-            status: ConnectionStatus.disconnected,
-            activeConnectionId: config.id,
-          );
-        },
       );
 
-      state = state.copyWith(
-        status: ConnectionStatus.connected,
-        lastConnected: DateTime.now(),
-      );
+      // Subscribe to events
+      _eventSubscription = _client!.events.listen(_eventController.add);
+
+      // Connect with challenge-response handshake
+      // Convert features ConnectionConfig to ACP ConnectionConfig
+      await _client!.connect(config.toAcpConfig());
 
       _logger.i('Connected to ${config.host}:${config.port}');
-    } on TimeoutException catch (e) {
-      _logger.e('Connection timeout: $e');
-      state = ConnectionManagerState(
-        status: ConnectionStatus.error,
-        activeConnectionId: config.id,
-        errorMessage: 'Connection timeout',
-      );
-      rethrow;
     } catch (e) {
       _logger.e('Connection error: $e');
       state = ConnectionManagerState(
-        status: ConnectionStatus.error,
+        status: GatewayConnectionStatus.error,
         activeConnectionId: config.id,
         errorMessage: e.toString(),
       );
@@ -134,45 +136,47 @@ class ConnectionManagerNotifier extends StateNotifier<ConnectionManagerState> {
     }
   }
 
-  /// Disconnect from gateway
+  /// Disconnect from Gateway
   Future<void> disconnect() async {
-    if (state.status == ConnectionStatus.disconnected) return;
+    if (state.status == GatewayConnectionStatus.disconnected) return;
 
-    state = state.copyWith(status: ConnectionStatus.disconnecting);
+    state = state.copyWith(status: GatewayConnectionStatus.disconnecting);
 
     try {
-      await _subscription?.cancel();
-      _subscription = null;
+      await _stateSubscription?.cancel();
+      _stateSubscription = null;
 
-      await _channel?.sink.close();
-      _channel = null;
-      _currentConfig = null;
+      await _eventSubscription?.cancel();
+      _eventSubscription = null;
+
+      await _client?.disconnect();
+      _client = null;
 
       state = const ConnectionManagerState();
       _logger.i('Disconnected');
     } catch (e) {
       _logger.e('Disconnect error: $e');
       state = ConnectionManagerState(
-        status: ConnectionStatus.error,
+        status: GatewayConnectionStatus.error,
         errorMessage: e.toString(),
       );
     }
   }
 
-  /// Send a message
-  void send(String message) {
-    if (_channel == null) {
+  /// Get the underlying client (throws if not connected)
+  GatewayClient get client {
+    if (_client == null || !_client!.isConnected) {
       throw StateError('Not connected');
     }
-    _channel!.sink.add(message);
-    _logger.d('Sent: $message');
+    return _client!;
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
-    _messageController.close();
-    _channel?.sink.close();
+    _stateSubscription?.cancel();
+    _eventSubscription?.cancel();
+    _eventController.close();
+    _client?.close();
     super.dispose();
   }
 }
@@ -193,7 +197,7 @@ final activeConnectionIdProvider = Provider<String?>((ref) {
   return ref.watch(connectionManagerProvider).activeConnectionId;
 });
 
-/// Provider for connection messages
-final connectionMessagesProvider = Provider<Stream<String>>((ref) {
-  return ref.read(connectionManagerProvider.notifier).messages;
+/// Provider for connection events
+final connectionEventsProvider = Provider<Stream<GatewayEvent>>((ref) {
+  return ref.read(connectionManagerProvider.notifier).events;
 });

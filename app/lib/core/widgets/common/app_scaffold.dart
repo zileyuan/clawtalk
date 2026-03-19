@@ -15,26 +15,49 @@ class AppScaffold extends StatelessWidget {
     this.backgroundColor,
     this.resizeToAvoidBottomInset = true,
     this.padding,
-  });
+  }) : _navTitle = null,
+       _navLeading = null,
+       _navTrailing = null,
+       _navBottom = null,
+       _automaticallyImplyLeading = null;
 
   /// Creates a scaffold with a large title navigation bar.
-  const AppScaffold.withLargeTitle({
-    super.key,
+  static AppScaffold withLargeTitle({
+    Key? key,
     required String title,
     Widget? leading,
     Widget? trailing,
-    Widget? bottom,
-    required this.child,
-    this.backgroundColor,
-    this.resizeToAvoidBottomInset = true,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16),
-  }) : navigationBar = CupertinoSliverNavigationBar(
-         largeTitle: Text(title),
-         leading: leading,
-         trailing: trailing,
-         bottom: bottom,
-         border: null,
-       );
+    PreferredSizeWidget? bottom,
+    required Widget child,
+    Color? backgroundColor,
+    bool resizeToAvoidBottomInset = true,
+    EdgeInsetsGeometry? padding,
+  }) {
+    return AppScaffold(
+      key: key,
+      backgroundColor: backgroundColor,
+      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+      padding: padding,
+      child: CustomScrollView(
+        slivers: [
+          CupertinoSliverNavigationBar(
+            largeTitle: Text(title),
+            leading: leading,
+            trailing: trailing,
+            bottom: bottom,
+            border: null,
+          ),
+          SliverSafeArea(
+            bottom: false,
+            sliver: SliverPadding(
+              padding: padding ?? EdgeInsets.zero,
+              sliver: SliverToBoxAdapter(child: child),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// Creates a scaffold with a standard navigation bar.
   const AppScaffold.withNavigationBar({
@@ -43,22 +66,20 @@ class AppScaffold extends StatelessWidget {
     Widget? leading,
     Widget? trailing,
     bool automaticallyImplyLeading = true,
-    Widget? bottom,
+    PreferredSizeWidget? bottom,
     required this.child,
     this.backgroundColor,
     this.resizeToAvoidBottomInset = true,
     this.padding,
-  }) : navigationBar = CupertinoNavigationBar(
-         middle: Text(title),
-         leading: leading,
-         trailing: trailing,
-         automaticallyImplyLeading: automaticallyImplyLeading,
-         bottom: bottom,
-         border: null,
-       );
+  }) : navigationBar = const _PreferredNavPlaceholder(),
+       _navTitle = title,
+       _navLeading = leading,
+       _navTrailing = trailing,
+       _automaticallyImplyLeading = automaticallyImplyLeading,
+       _navBottom = bottom;
 
   /// The navigation bar to display at the top.
-  final ObstructingPreferredSizeWidget? navigationBar;
+  final Widget? navigationBar;
 
   /// The main content of the scaffold.
   final Widget child;
@@ -72,6 +93,13 @@ class AppScaffold extends StatelessWidget {
   /// Padding around the child.
   final EdgeInsetsGeometry? padding;
 
+  // Private fields for navigation bar
+  final String? _navTitle;
+  final Widget? _navLeading;
+  final Widget? _navTrailing;
+  final PreferredSizeWidget? _navBottom;
+  final bool? _automaticallyImplyLeading;
+
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
@@ -82,8 +110,27 @@ class AppScaffold extends StatelessWidget {
       content = Padding(padding: padding!, child: content);
     }
 
+    // If using withNavigationBar constructor
+    if (_navTitle != null) {
+      return CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          middle: Text(_navTitle),
+          leading: _navLeading,
+          trailing: _navTrailing,
+          automaticallyImplyLeading: _automaticallyImplyLeading ?? true,
+          bottom: _navBottom,
+          border: null,
+        ),
+        backgroundColor:
+            backgroundColor ??
+            (isDark ? CupertinoColors.black : CupertinoColors.systemBackground),
+        resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+        child: SafeArea(child: content),
+      );
+    }
+
     return CupertinoPageScaffold(
-      navigationBar: navigationBar,
+      navigationBar: navigationBar as ObstructingPreferredSizeWidget?,
       backgroundColor:
           backgroundColor ??
           (isDark ? CupertinoColors.black : CupertinoColors.systemBackground),
@@ -91,6 +138,21 @@ class AppScaffold extends StatelessWidget {
       child: SafeArea(child: content),
     );
   }
+}
+
+/// Placeholder class for navigation bar type
+class _PreferredNavPlaceholder extends Widget
+    implements ObstructingPreferredSizeWidget {
+  const _PreferredNavPlaceholder();
+
+  @override
+  Size get preferredSize => Size.zero;
+
+  @override
+  bool shouldFullyObstruct(BuildContext context) => false;
+
+  @override
+  Element createElement() => throw UnimplementedError();
 }
 
 /// A scrollable scaffold with pull-to-refresh support.

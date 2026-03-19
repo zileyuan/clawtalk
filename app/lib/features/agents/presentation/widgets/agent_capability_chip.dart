@@ -64,7 +64,7 @@ class AgentCapabilityChip extends StatelessWidget {
   IconData _getCapabilityIcon() {
     final name = capability.name.toLowerCase();
     if (name.contains('code') || name.contains('program')) {
-      return CupertinoIcons.code;
+      return CupertinoIcons.chevron_left_slash_chevron_right;
     } else if (name.contains('write') || name.contains('text')) {
       return CupertinoIcons.pencil;
     } else if (name.contains('image') || name.contains('visual')) {

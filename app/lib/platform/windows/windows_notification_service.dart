@@ -24,13 +24,11 @@ class WindowsNotificationService implements NotificationService {
         windows: WindowsInitializationSettings(
           appName: 'ClawTalk',
           appUserModelId: 'com.clawtalk.app',
+          guid: 'clawtalk-windows-notifications',
         ),
       );
 
-      await _notifications.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: _onNotificationTapped,
-      );
+      await _notifications.initialize(settings: initializationSettings);
 
       _initialized = true;
     } catch (e) {
@@ -56,16 +54,15 @@ class WindowsNotificationService implements NotificationService {
 
       final windowsDetails = WindowsNotificationDetails(
         subtitle: options.subtitle,
-        sound: options.sound,
       );
 
       final notificationDetails = NotificationDetails(windows: windowsDetails);
 
       await _notifications.show(
-        id,
-        options.title,
-        options.body,
-        notificationDetails,
+        id: id,
+        title: options.title,
+        body: options.body,
+        notificationDetails: notificationDetails,
         payload: options.data != null ? jsonEncode(options.data) : null,
       );
     } catch (e) {
@@ -79,7 +76,7 @@ class WindowsNotificationService implements NotificationService {
   @override
   Future<void> cancel(int id) async {
     try {
-      await _notifications.cancel(id);
+      await _notifications.cancel(id: id);
     } catch (e) {
       throw CacheException(
         message: 'Failed to cancel notification: $e',
@@ -109,7 +106,7 @@ class WindowsNotificationService implements NotificationService {
             (request) => NotificationOptions(
               title: request.title ?? '',
               body: request.body ?? '',
-              subtitle: request.subtitle,
+              subtitle: null, // subtitle not available in newer API
               data: request.payload != null
                   ? jsonDecode(request.payload!) as Map<String, dynamic>
                   : null,

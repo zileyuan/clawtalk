@@ -1,5 +1,5 @@
-import '../../../core/errors/failures.dart';
-import '../data/models/settings_model.dart';
+import 'package:clawtalk/core/errors/failures.dart';
+import 'package:clawtalk/features/settings/data/models/settings_model.dart';
 
 /// Repository interface for app settings.
 ///

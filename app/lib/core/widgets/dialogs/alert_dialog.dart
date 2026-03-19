@@ -17,7 +17,7 @@ class AppAlertDialog extends StatelessWidget {
   });
 
   /// Creates an alert dialog with a single OK button.
-  const AppAlertDialog.info({
+  AppAlertDialog.info({
     super.key,
     this.title,
     this.content,
@@ -33,14 +33,15 @@ class AppAlertDialog extends StatelessWidget {
        ];
 
   /// Creates an error alert dialog.
-  const AppAlertDialog.error({
+  AppAlertDialog.error({
     super.key,
-    this.title = 'Error',
+    Widget? title,
     required String message,
     VoidCallback? onDismiss,
     String dismissText = 'OK',
     this.scrollable = false,
-  }) : content = Text(message),
+  }) : title = title ?? const Text('Error'),
+       content = Text(message),
        actions = [
          CupertinoDialogAction(
            onPressed: onDismiss ?? () {},
@@ -50,14 +51,15 @@ class AppAlertDialog extends StatelessWidget {
        ];
 
   /// Creates a success alert dialog.
-  const AppAlertDialog.success({
+  AppAlertDialog.success({
     super.key,
-    this.title = 'Success',
+    Widget? title,
     required String message,
     VoidCallback? onDismiss,
     String dismissText = 'OK',
     this.scrollable = false,
-  }) : content = Text(message),
+  }) : title = title ?? const Text('Success'),
+       content = Text(message),
        actions = [
          CupertinoDialogAction(
            onPressed: onDismiss ?? () {},
@@ -128,7 +130,7 @@ Future<void> showInfoDialog({
 /// Shows an error dialog.
 Future<void> showErrorDialog({
   required BuildContext context,
-  String title = 'Error',
+  Widget? title,
   required String message,
   String dismissText = 'OK',
   VoidCallback? onDismiss,
@@ -147,7 +149,7 @@ Future<void> showErrorDialog({
 /// Shows a success dialog.
 Future<void> showSuccessDialog({
   required BuildContext context,
-  String title = 'Success',
+  Widget? title,
   required String message,
   String dismissText = 'OK',
   VoidCallback? onDismiss,

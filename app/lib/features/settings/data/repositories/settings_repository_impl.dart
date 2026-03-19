@@ -1,9 +1,9 @@
-import '../../../core/errors/error_handler.dart';
-import '../../../core/errors/exceptions.dart';
-import '../../../core/errors/failures.dart';
-import '../data/datasources/local/settings_local_data_source.dart';
-import '../data/models/settings_model.dart';
-import '../domain/repositories/settings_repository.dart';
+import 'package:clawtalk/core/errors/error_handler.dart';
+import 'package:clawtalk/core/errors/exceptions.dart';
+import 'package:clawtalk/core/errors/failures.dart';
+import 'package:clawtalk/features/settings/data/datasources/local/settings_local_data_source.dart';
+import 'package:clawtalk/features/settings/data/models/settings_model.dart';
+import 'package:clawtalk/features/settings/domain/repositories/settings_repository.dart';
 
 /// Implementation of [SettingsRepository].
 ///

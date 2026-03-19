@@ -1,7 +1,7 @@
-import '../../../../core/constants/storage_keys.dart';
-import '../../../../core/data/datasources/local/preferences_service.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../models/settings_model.dart';
+import 'package:clawtalk/core/constants/storage_keys.dart';
+import 'package:clawtalk/core/data/datasources/local/preferences_service.dart';
+import 'package:clawtalk/core/errors/exceptions.dart';
+import 'package:clawtalk/features/settings/data/models/settings_model.dart';
 
 /// Local data source for app settings.
 ///

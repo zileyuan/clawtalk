@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import 'package:clawtalk/core/constants/storage_keys.dart';
 import 'package:clawtalk/core/data/datasources/local/preferences_service.dart';
@@ -320,27 +321,46 @@ class ConnectionLocalDataSourceImpl implements ConnectionLocalDataSource {
   Future<({String? token, String? password})> getCredentials(
     String connectionId,
   ) async {
+    debugPrint(
+      '[CREDENTIALS] Getting credentials for connection: $connectionId',
+    );
+
+    String? token;
+    String? password;
+
     try {
       // Try secure storage first
-      final token = await _secureStorage.read(
+      token = await _secureStorage.read(
         StorageKeys.connectionToken(connectionId),
       );
-      final password = await _secureStorage.read(
+      password = await _secureStorage.read(
         StorageKeys.connectionPassword(connectionId),
       );
-
-      return (token: token, password: password);
+      debugPrint(
+        '[CREDENTIALS] From secure storage - token: $token, password: $password',
+      );
     } catch (e) {
-      // Fallback to preferences
-      final token = _preferences.readString(
+      debugPrint('[CREDENTIALS] Secure storage failed: $e');
+    }
+
+    // If secure storage returned null or failed, try preferences fallback
+    if (token == null) {
+      token = _preferences.readString(
         StorageKeys.connectionToken(connectionId),
       );
-      final password = _preferences.readString(
+      debugPrint('[CREDENTIALS] Fallback to preferences for token: $token');
+    }
+
+    if (password == null) {
+      password = _preferences.readString(
         StorageKeys.connectionPassword(connectionId),
       );
-
-      return (token: token, password: password);
+      debugPrint(
+        '[CREDENTIALS] Fallback to preferences for password: $password',
+      );
     }
+
+    return (token: token, password: password);
   }
 
   @override

@@ -1,4 +1,4 @@
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 import '../platform_interface.dart';
 
@@ -22,35 +22,35 @@ class IOSPermissions implements PlatformPermissions {
     return _mapPermissionStatus(status);
   }
 
-  Permission? _mapPermissionType(PermissionType type) {
+  ph.Permission? _mapPermissionType(PermissionType type) {
     switch (type) {
       case PermissionType.camera:
-        return Permission.camera;
+        return ph.Permission.camera;
       case PermissionType.microphone:
-        return Permission.microphone;
+        return ph.Permission.microphone;
       case PermissionType.storage:
         // iOS doesn't have general storage permission
         // Photo library access is handled separately
-        return Permission.photos;
+        return ph.Permission.photos;
       case PermissionType.notification:
         // iOS notification permission is handled by NotificationService
         return null;
     }
   }
 
-  PermissionStatus _mapPermissionStatus(PermissionStatus status) {
+  PermissionStatus _mapPermissionStatus(ph.PermissionStatus status) {
     switch (status) {
-      case PermissionStatus.granted:
+      case ph.PermissionStatus.granted:
         return PermissionStatus.granted;
-      case PermissionStatus.denied:
+      case ph.PermissionStatus.denied:
         return PermissionStatus.denied;
-      case PermissionStatus.restricted:
+      case ph.PermissionStatus.restricted:
         return PermissionStatus.restricted;
-      case PermissionStatus.limited:
+      case ph.PermissionStatus.limited:
         return PermissionStatus.limited;
-      case PermissionStatus.permanentlyDenied:
+      case ph.PermissionStatus.permanentlyDenied:
         return PermissionStatus.permanentlyDenied;
-      case PermissionStatus.provisional:
+      case ph.PermissionStatus.provisional:
         return PermissionStatus.limited;
     }
   }
@@ -59,7 +59,7 @@ class IOSPermissions implements PlatformPermissions {
   Future<Map<PermissionType, PermissionStatus>> requestPermissions(
     List<PermissionType> types,
   ) async {
-    final permissions = <Permission>[];
+    final permissions = <ph.Permission>[];
 
     for (final type in types) {
       final permission = _mapPermissionType(type);
@@ -85,7 +85,7 @@ class IOSPermissions implements PlatformPermissions {
 
   @override
   Future<bool> openAppSettings() async {
-    return await openAppSettings();
+    return await ph.openAppSettings();
   }
 
   @override

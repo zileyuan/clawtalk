@@ -28,10 +28,7 @@ class IOSNotificationService implements NotificationService {
         ),
       );
 
-      await _notifications.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: _onNotificationTapped,
-      );
+      await _notifications.initialize(settings: initializationSettings);
 
       _initialized = true;
     } catch (e) {
@@ -67,10 +64,10 @@ class IOSNotificationService implements NotificationService {
       final notificationDetails = NotificationDetails(iOS: iOSDetails);
 
       await _notifications.show(
-        id,
-        options.title,
-        options.body,
-        notificationDetails,
+        id: id,
+        title: options.title,
+        body: options.body,
+        notificationDetails: notificationDetails,
         payload: options.data != null ? jsonEncode(options.data) : null,
       );
     } catch (e) {
@@ -84,7 +81,7 @@ class IOSNotificationService implements NotificationService {
   @override
   Future<void> cancel(int id) async {
     try {
-      await _notifications.cancel(id);
+      await _notifications.cancel(id: id);
     } catch (e) {
       throw CacheException(
         message: 'Failed to cancel notification: $e',
@@ -114,7 +111,7 @@ class IOSNotificationService implements NotificationService {
             (request) => NotificationOptions(
               title: request.title ?? '',
               body: request.body ?? '',
-              subtitle: request.subtitle,
+              subtitle: null, // subtitle not available in newer API
               data: request.payload != null
                   ? jsonDecode(request.payload!) as Map<String, dynamic>
                   : null,

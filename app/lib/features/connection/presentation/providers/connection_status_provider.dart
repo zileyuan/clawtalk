@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/providers/connection_provider.dart' as manager;
+import '../../../../gateway/client/gateway_connection_state.dart';
 import '../../domain/entities/connection_config.dart';
 import '../../domain/entities/connection_status.dart';
 
@@ -87,18 +88,24 @@ class ConnectionStatusNotifier extends StateNotifier<ConnectionStatusState> {
   }
 
   /// Map connection manager status to local status
-  ConnectionStatus _mapConnectionStatus(manager.ConnectionStatus status) {
+  ConnectionStatus _mapConnectionStatus(GatewayConnectionStatus status) {
     switch (status) {
-      case manager.ConnectionStatus.connected:
+      case GatewayConnectionStatus.connected:
         return ConnectionStatus.connected;
-      case manager.ConnectionStatus.connecting:
+      case GatewayConnectionStatus.connecting:
         return ConnectionStatus.connecting;
-      case manager.ConnectionStatus.disconnecting:
+      case GatewayConnectionStatus.awaitingChallenge:
+        return ConnectionStatus.connecting;
+      case GatewayConnectionStatus.authenticating:
+        return ConnectionStatus.connecting;
+      case GatewayConnectionStatus.disconnecting:
         return ConnectionStatus.disconnecting;
-      case manager.ConnectionStatus.disconnected:
+      case GatewayConnectionStatus.disconnected:
         return ConnectionStatus.disconnected;
-      case manager.ConnectionStatus.error:
+      case GatewayConnectionStatus.error:
         return ConnectionStatus.error;
+      case GatewayConnectionStatus.reconnecting:
+        return ConnectionStatus.connecting;
     }
   }
 

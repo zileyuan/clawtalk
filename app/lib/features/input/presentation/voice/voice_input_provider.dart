@@ -8,7 +8,7 @@ import 'package:path/path.dart' as path;
 
 import '../../domain/entities/voice_input.dart';
 import '../../../../core/constants/content_limits.dart';
-import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/logger.dart' as log;
 
 /// Enum representing voice recording state
 enum RecordingState { idle, recording, paused, stopping, error }
@@ -78,6 +78,9 @@ class VoiceInputState {
         duration.inSeconds <= ContentLimits.maxVoiceDurationSeconds;
   }
 
+  /// Returns true if state is valid for submission
+  bool get isValid => hasRecording && hasValidDuration && errorMessage == null;
+
   VoiceInputState copyWith({
     RecordingState? recordingState,
     VoiceInput? voiceInput,
@@ -117,7 +120,7 @@ class VoiceInputNotifier extends StateNotifier<VoiceInputState> {
       // Check initial permission status
       await _recorder.hasPermission();
     } catch (e) {
-      Logger.error('Error initializing recorder: $e');
+      log.logger.e('Error initializing recorder: $e');
     }
   }
 
@@ -168,7 +171,7 @@ class VoiceInputNotifier extends StateNotifier<VoiceInputState> {
       _startTimer();
       _startAmplitudeMonitoring();
     } catch (e) {
-      Logger.error('Error starting recording: $e');
+      log.logger.e('Error starting recording: $e');
       _setError('Failed to start recording: $e');
     } finally {
       _setLoading(false);
@@ -193,7 +196,7 @@ class VoiceInputNotifier extends StateNotifier<VoiceInputState> {
 
         // Validate duration
         if (state.duration.inSeconds < 1) {
-          await file.delete(ignore: true);
+          await file.delete();
           _setError('Recording too short (minimum 1 second)');
           state = state.copyWith(
             recordingState: RecordingState.error,
@@ -204,7 +207,7 @@ class VoiceInputNotifier extends StateNotifier<VoiceInputState> {
 
         // Validate size
         if (fileStat.size > ContentLimits.maxVoiceSizeBytes) {
-          await file.delete(ignore: true);
+          await file.delete();
           _setError(
             'Recording too large (maximum ${ContentLimits.maxVoiceSizeBytes ~/ (1024 * 1024)}MB)',
           );
@@ -234,7 +237,7 @@ class VoiceInputNotifier extends StateNotifier<VoiceInputState> {
         );
       }
     } catch (e) {
-      Logger.error('Error stopping recording: $e');
+      log.logger.e('Error stopping recording: $e');
       _setError('Failed to stop recording: $e');
     }
   }
@@ -251,12 +254,12 @@ class VoiceInputNotifier extends StateNotifier<VoiceInputState> {
 
       // Delete the recording file
       if (path != null) {
-        await File(path).delete(ignore: true);
+        await File(path).delete();
       }
 
       state = VoiceInputState.idle();
     } catch (e) {
-      Logger.error('Error cancelling recording: $e');
+      log.logger.e('Error cancelling recording: $e');
     }
   }
 
@@ -269,7 +272,7 @@ class VoiceInputNotifier extends StateNotifier<VoiceInputState> {
           await file.delete();
         }
       } catch (e) {
-        Logger.error('Error deleting recording file: $e');
+        log.logger.e('Error deleting recording file: $e');
       }
     }
 

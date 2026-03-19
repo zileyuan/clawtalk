@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/themes/app_colors.dart';
-import '../providers/task_provider.dart';
+import 'package:clawtalk/core/themes/app_colors.dart';
+import 'package:clawtalk/features/agents/domain/entities/task.dart';
+import 'package:clawtalk/features/agents/presentation/providers/task_provider.dart';
 
 /// Progress indicator for running tasks
 class TaskProgressIndicator extends ConsumerWidget {

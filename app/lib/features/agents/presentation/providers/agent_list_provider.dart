@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:logger/logger.dart';
 
+import 'package:clawtalk/core/providers/connection_provider.dart';
+import 'package:clawtalk/gateway/protocol/gateway_request.dart';
 import '../../domain/entities/agent.dart';
 import '../../domain/entities/agent_capability.dart';
 
 /// Provider for the list of available agents
 final agentListProvider = StateNotifierProvider<AgentListNotifier, List<Agent>>(
-  (ref) => AgentListNotifier(),
+  (ref) => AgentListNotifier(ref),
 );
 
 /// Provider for filtered agents based on search query
@@ -75,8 +78,41 @@ String _getCategoryFromCapability(AgentCapability capability) {
 
 /// Notifier for managing the agent list
 class AgentListNotifier extends StateNotifier<List<Agent>> {
-  AgentListNotifier() : super([]) {
+  final Ref _ref;
+  final Logger _logger = Logger();
+
+  AgentListNotifier(this._ref) : super([]) {
+    // Load mock agents initially, will be replaced when connected
     _loadMockAgents();
+  }
+
+  /// Load agents from Gateway
+  Future<void> loadAgents() async {
+    try {
+      final connectionManager = _ref.read(connectionManagerProvider);
+      if (!connectionManager.isConnected) {
+        _logger.w('Not connected to Gateway, using mock agents');
+        return;
+      }
+
+      final client = _ref.read(connectionManagerProvider.notifier).client;
+      final request = GatewayRequestFactory.agentsList();
+      final response = await client.sendRequest(request);
+
+      if (response.ok && response.payload != null) {
+        final agentsJson =
+            response.payload!['agents'] as List? ??
+            response.payload!['data'] as List? ??
+            [];
+        state = agentsJson
+            .map((json) => Agent.fromGatewayJson(json as Map<String, dynamic>))
+            .toList();
+        _logger.i('Loaded ${state.length} agents from Gateway');
+      }
+    } catch (e) {
+      _logger.e('Failed to load agents: $e');
+      // Keep existing state on error
+    }
   }
 
   void _loadMockAgents() {
@@ -158,9 +194,12 @@ class AgentListNotifier extends StateNotifier<List<Agent>> {
 
   /// Refresh the agent list
   Future<void> refresh() async {
-    // Simulate network request
-    await Future.delayed(const Duration(milliseconds: 500));
-    _loadMockAgents();
+    // Try to load from Gateway first
+    await loadAgents();
+    // If still empty, use mock data
+    if (state.isEmpty) {
+      _loadMockAgents();
+    }
   }
 
   /// Add a new agent to the list

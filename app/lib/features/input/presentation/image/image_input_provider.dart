@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart' as img;
 import 'package:path/path.dart' as path;
 
 import '../../domain/entities/image_input.dart';
 import '../../../../core/constants/content_limits.dart';
-import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/logger.dart' as log;
 
 /// State class for image input
 class ImageInputState {
@@ -60,6 +60,9 @@ class ImageInputState {
   /// Returns true if any validation errors exist
   bool get hasValidationErrors => validationErrors.isNotEmpty;
 
+  /// Returns true if state is valid for submission
+  bool get isValid => !hasValidationErrors && images.isNotEmpty;
+
   ImageInputState copyWith({
     List<ImageInput>? images,
     bool? isLoading,
@@ -77,7 +80,7 @@ class ImageInputState {
 
 /// Notifier for image input state management
 class ImageInputNotifier extends StateNotifier<ImageInputState> {
-  final ImagePicker _picker = ImagePicker();
+  final img.ImagePicker _picker = img.ImagePicker();
 
   ImageInputNotifier() : super(ImageInputState.empty());
 
@@ -92,8 +95,8 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
       _setLoading(true);
       _clearError();
 
-      final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera,
+      final img.XFile? photo = await _picker.pickImage(
+        source: img.ImageSource.camera,
         maxWidth: ContentLimits.maxImageWidth.toDouble(),
         maxHeight: ContentLimits.maxImageHeight.toDouble(),
         imageQuality: 90,
@@ -106,7 +109,7 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
         }
       }
     } catch (e) {
-      Logger.error('Error picking from camera: $e');
+      log.logger.e('Error picking from camera: $e');
       _setError('Failed to capture photo');
     } finally {
       _setLoading(false);
@@ -124,7 +127,7 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
       _setLoading(true);
       _clearError();
 
-      final List<XFile> photos = await _picker.pickMultiImage(
+      final List<img.XFile> photos = await _picker.pickMultiImage(
         maxWidth: ContentLimits.maxImageWidth.toDouble(),
         maxHeight: ContentLimits.maxImageHeight.toDouble(),
         imageQuality: 90,
@@ -148,7 +151,7 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
         }
       }
     } catch (e) {
-      Logger.error('Error picking from gallery: $e');
+      log.logger.e('Error picking from gallery: $e');
       _setError('Failed to select images');
     } finally {
       _setLoading(false);
@@ -169,8 +172,8 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
       final remaining = ContentLimits.maxImageCount - state.images.length;
       final pathsToProcess = paths.take(remaining).toList();
 
-      for (final path in pathsToProcess) {
-        final file = XFile(path);
+      for (final p in pathsToProcess) {
+        final file = img.XFile(p);
         final image = await _createImageInput(file, ImageSource.dragDrop);
         if (image != null) {
           _addImage(image);
@@ -183,7 +186,7 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
         );
       }
     } catch (e) {
-      Logger.error('Error adding from paths: $e');
+      log.logger.e('Error adding from paths: $e');
       _setError('Failed to add images');
     } finally {
       _setLoading(false);
@@ -249,7 +252,10 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
     state = state.copyWith(images: updatedImages);
   }
 
-  Future<ImageInput?> _createImageInput(XFile file, ImageSource source) async {
+  Future<ImageInput?> _createImageInput(
+    img.XFile file,
+    ImageSource source,
+  ) async {
     try {
       final filePath = file.path;
       final fileStat = await File(filePath).stat();
@@ -285,7 +291,7 @@ class ImageInputNotifier extends StateNotifier<ImageInputState> {
         source: source,
       );
     } catch (e) {
-      Logger.error('Error creating image input: $e');
+      log.logger.e('Error creating image input: $e');
       return null;
     }
   }

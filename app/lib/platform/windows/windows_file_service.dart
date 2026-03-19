@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:file_picker/file_picker.dart';
 
 import '../platform_interface.dart';
@@ -164,13 +164,13 @@ class WindowsFileService implements FileService {
 
   @override
   Future<String> getDocumentsDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await path_provider.getApplicationDocumentsDirectory();
     return directory.path;
   }
 
   @override
   Future<String> getTemporaryDirectory() async {
-    final directory = await getTemporaryDirectory();
+    final directory = await path_provider.getTemporaryDirectory();
     return directory.path;
   }
 
