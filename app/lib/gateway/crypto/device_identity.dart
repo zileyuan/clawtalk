@@ -2,10 +2,17 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:convert/convert.dart';
+import 'package:crypto/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
+
+/// Base64URL encode (no padding, URL-safe)
+String _base64UrlEncode(List<int> bytes) {
+  return base64Encode(
+    bytes,
+  ).replaceAll('+', '-').replaceAll('/', '_').replaceAll(RegExp(r'=+$'), '');
+}
 
 /// Device identity for Gateway authentication
 class DeviceIdentity {
@@ -21,12 +28,18 @@ class DeviceIdentity {
        _publicKeyBytes = publicKeyBytes;
 
   /// Generate a new device identity
+  /// Device ID is derived from public key SHA256 fingerprint (OpenClaw format)
   factory DeviceIdentity.generate() {
     final keyPair = ed.generateKey();
+    final publicKeyBytes = keyPair.publicKey.bytes;
+
+    // Device ID = SHA256(publicKey) hex string (OpenClaw Gateway requirement)
+    final deviceId = sha256.convert(publicKeyBytes).toString();
+
     return DeviceIdentity._(
-      deviceId: const Uuid().v4(),
+      deviceId: deviceId,
       privateKeyBytes: keyPair.privateKey.bytes,
-      publicKeyBytes: keyPair.publicKey.bytes,
+      publicKeyBytes: publicKeyBytes,
     );
   }
 
@@ -43,8 +56,11 @@ class DeviceIdentity {
     );
   }
 
-  /// Get public key as hex string
+  /// Get public key as hex string (for storage)
   String get publicKeyHex => hex.encode(_publicKeyBytes);
+
+  /// Get public key as base64url (for OpenClaw Gateway protocol)
+  String get publicKeyBase64Url => _base64UrlEncode(_publicKeyBytes);
 
   /// Get private key as hex string (for storage)
   String get privateKeyHex => hex.encode(_privateKeyBytes);
@@ -182,29 +198,33 @@ class DeviceIdentityService {
   DeviceSignaturePayload buildSignaturePayload({
     required DeviceIdentity identity,
     required String nonce,
+    String clientId = 'cli',
+    String clientMode = 'ui',
+    String role = 'operator',
+    List<String> scopes = const ['operator.read', 'operator.write'],
+    String? token,
   }) {
     final signedAt = DateTime.now().millisecondsSinceEpoch;
 
-    // Build the message to sign: nonce + signedAt
-    final message = _buildSignMessage(nonce: nonce, signedAt: signedAt);
+    // Build the message to sign using OpenClaw v2 format:
+    // v2|{deviceId}|{clientId}|{clientMode}|{role}|{scopes}|{signedAtMs}|{token}|{nonce}
+    final scopesStr = scopes.join(',');
+    final tokenStr = token ?? '';
+    final payload =
+        'v2|${identity.deviceId}|$clientId|$clientMode|$role|$scopesStr|$signedAt|$tokenStr|$nonce';
 
+    final message = utf8.encode(payload) as Uint8List;
     final signature = sign(identity, message);
-    final signatureHex = hex.encode(signature);
+    // Signature should be base64url encoded for OpenClaw
+    final signatureBase64Url = _base64UrlEncode(signature);
 
     return DeviceSignaturePayload(
       deviceId: identity.deviceId,
-      publicKey: identity.publicKeyHex,
-      signature: signatureHex,
+      publicKey: identity.publicKeyBase64Url, // Use base64url for OpenClaw
+      signature: signatureBase64Url,
       signedAt: signedAt,
       nonce: nonce,
     );
-  }
-
-  /// Build the message to sign
-  Uint8List _buildSignMessage({required String nonce, required int signedAt}) {
-    // Message format: nonce:signedAt (matching OpenClaw format)
-    final message = '$nonce:$signedAt';
-    return utf8.encode(message) as Uint8List;
   }
 
   /// Clear stored device identity

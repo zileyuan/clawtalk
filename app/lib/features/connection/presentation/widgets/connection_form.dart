@@ -209,7 +209,6 @@ class _ConnectionFormWithAuthState
   late final TextEditingController _portController;
   late final TextEditingController _tokenController;
   late final TextEditingController _passwordController;
-  bool _showAuthSection = false;
   bool _showToken = false;
   bool _showPassword = false;
 
@@ -239,20 +238,6 @@ class _ConnectionFormWithAuthState
             .read(connectionFormProvider.notifier)
             .initializeWithConnection(widget.initialConnection!);
         _updateControllers(widget.initialConnection!);
-
-        // Check if we should show auth section (non-empty token or password)
-        final hasToken = widget.initialConnection!.token?.isNotEmpty ?? false;
-        final hasPassword =
-            widget.initialConnection!.password?.isNotEmpty ?? false;
-        debugPrint(
-          '[EDIT_FORM] hasToken: $hasToken, hasPassword: $hasPassword',
-        );
-
-        if (hasToken || hasPassword) {
-          setState(() {
-            _showAuthSection = true;
-          });
-        }
       } else {
         // For new connections, sync controller initial values to state
         // This ensures the default port '18789' from controller is saved
@@ -336,63 +321,29 @@ class _ConnectionFormWithAuthState
 
         // Authentication Section
         CupertinoFormSection.insetGrouped(
-          header: Row(
-            children: [
-              const Text('AUTHENTICATION'),
-              const SizedBox(width: 8),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  setState(() {
-                    _showAuthSection = !_showAuthSection;
-                  });
-                },
-                child: Icon(
-                  _showAuthSection
-                      ? CupertinoIcons.chevron_up
-                      : CupertinoIcons.chevron_down,
-                  size: 16,
-                  color: CupertinoColors.activeBlue,
-                ),
-              ),
-            ],
-          ),
-          children: _showAuthSection
-              ? [
-                  _buildPasswordField(
-                    controller: _tokenController,
-                    icon: CupertinoIcons.lock,
-                    placeholder: 'Access Token (optional)',
-                    onChanged: (v) =>
-                        ref.read(connectionFormProvider.notifier).setToken(v),
-                    isVisible: _showToken,
-                    onToggleVisibility: () =>
-                        setState(() => _showToken = !_showToken),
-                  ),
-                  _buildPasswordField(
-                    controller: _passwordController,
-                    icon: CupertinoIcons.lock,
-                    placeholder: 'Password (optional)',
-                    onChanged: (v) => ref
-                        .read(connectionFormProvider.notifier)
-                        .setPassword(v),
-                    isVisible: _showPassword,
-                    onToggleVisibility: () =>
-                        setState(() => _showPassword = !_showPassword),
-                  ),
-                ]
-              : [
-                  CupertinoFormRow(
-                    child: CupertinoButton(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      onPressed: () => setState(() => _showAuthSection = true),
-                      child: const Text(
-                        'Add Authentication',
-                        style: TextStyle(color: CupertinoColors.activeBlue),
-                      ),
-                    ),
-                  ),
-                ],
+          header: const Text('AUTHENTICATION'),
+          children: [
+            _buildPasswordField(
+              controller: _tokenController,
+              icon: CupertinoIcons.lock,
+              placeholder: 'Access Token (optional)',
+              onChanged: (v) =>
+                  ref.read(connectionFormProvider.notifier).setToken(v),
+              isVisible: _showToken,
+              onToggleVisibility: () =>
+                  setState(() => _showToken = !_showToken),
+            ),
+            _buildPasswordField(
+              controller: _passwordController,
+              icon: CupertinoIcons.lock,
+              placeholder: 'Password (optional)',
+              onChanged: (v) =>
+                  ref.read(connectionFormProvider.notifier).setPassword(v),
+              isVisible: _showPassword,
+              onToggleVisibility: () =>
+                  setState(() => _showPassword = !_showPassword),
+            ),
+          ],
         ),
       ],
     );

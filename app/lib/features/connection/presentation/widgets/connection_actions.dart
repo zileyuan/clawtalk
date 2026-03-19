@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/connection_status.dart';
+import '../providers/connection_list_provider.dart';
 import '../providers/connection_status_provider.dart';
 
 /// Action buttons for connection management (Connect/Disconnect/Reconnect)
@@ -39,9 +40,7 @@ class ConnectionActions extends ConsumerWidget {
   Widget _buildConnectButton(BuildContext context, WidgetRef ref) {
     return CupertinoButton(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      onPressed: () {
-        ref.read(connectionStatusProvider.notifier).connect(connectionId);
-      },
+      onPressed: () => _handleConnect(context, ref),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -63,6 +62,77 @@ class ConnectionActions extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Handle connection with error handling
+  Future<void> _handleConnect(BuildContext context, WidgetRef ref) async {
+    // Get the connection config
+    final connections = ref.read(connectionListProvider).connections;
+    final connection = connections
+        .where((c) => c.id == connectionId)
+        .firstOrNull;
+
+    if (connection == null) {
+      _showErrorDialog(context, 'Connection not found');
+      return;
+    }
+
+    try {
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(connection);
+    } catch (e) {
+      // Check if this is a pairing required error
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('pairing required') ||
+          errorString.contains('not_paired')) {
+        _showPairingRequiredDialog(context);
+      } else {
+        _showErrorDialog(context, e.toString());
+      }
+    }
+  }
+
+  /// Show dialog when device pairing is required
+  void _showPairingRequiredDialog(BuildContext context) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Device Pairing Required'),
+        content: const Text(
+          'A pairing request has been sent to the Gateway.\n\n'
+          'Please ask the OpenClaw administrator to approve this device:\n\n'
+          '• Run: openclaw devices list\n'
+          '• Run: openclaw devices approve --latest\n\n'
+          'After approval, try connecting again.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show error dialog
+  void _showErrorDialog(BuildContext context, String message) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Connection Failed'),
+        content: Text(
+          message.length > 200 ? '${message.substring(0, 200)}...' : message,
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
     );
   }
@@ -179,14 +249,82 @@ class ConnectionActionButton extends ConsumerWidget {
 
     return CupertinoButton(
       padding: EdgeInsets.zero,
-      onPressed:
-          onConnect ??
-          () =>
-              ref.read(connectionStatusProvider.notifier).connect(connectionId),
+      onPressed: onConnect ?? () => _handleConnect(context, ref),
       child: Icon(
         CupertinoIcons.arrow_right_circle_fill,
         color: CupertinoColors.activeBlue,
         size: 26,
+      ),
+    );
+  }
+
+  /// Handle connection with error handling
+  Future<void> _handleConnect(BuildContext context, WidgetRef ref) async {
+    // Get the connection config
+    final connections = ref.read(connectionListProvider).connections;
+    final connection = connections
+        .where((c) => c.id == connectionId)
+        .firstOrNull;
+
+    if (connection == null) {
+      _showErrorDialog(context, 'Connection not found');
+      return;
+    }
+
+    try {
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(connection);
+    } catch (e) {
+      // Check if this is a pairing required error
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('pairing required') ||
+          errorString.contains('not_paired')) {
+        _showPairingRequiredDialog(context);
+      } else {
+        _showErrorDialog(context, e.toString());
+      }
+    }
+  }
+
+  /// Show dialog when device pairing is required
+  void _showPairingRequiredDialog(BuildContext context) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Device Pairing Required'),
+        content: const Text(
+          'A pairing request has been sent to the Gateway.\n\n'
+          'Please ask the OpenClaw administrator to approve this device:\n\n'
+          '• Run: openclaw devices list\n'
+          '• Run: openclaw devices approve --latest\n\n'
+          'After approval, try connecting again.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show error dialog
+  void _showErrorDialog(BuildContext context, String message) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Connection Failed'),
+        content: Text(
+          message.length > 200 ? '${message.substring(0, 200)}...' : message,
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
     );
   }

@@ -79,6 +79,7 @@ class GatewayRequestFactory {
     String? password,
     String? clientId,
     String? clientVersion,
+    String? displayName,
     String platform = 'macos',
     String mode =
         'ui', // "cli", "webchat", "ui", "backend", "node", "probe", "test"
@@ -96,6 +97,7 @@ class GatewayRequestFactory {
         'version': clientVersion ?? '1.0.0',
         'platform': platform,
         'mode': mode,
+        if (displayName != null) 'displayName': displayName,
       },
       'role': 'operator',
       'scopes': ['operator.read', 'operator.write'],

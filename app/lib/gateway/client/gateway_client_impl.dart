@@ -134,24 +134,32 @@ class GatewayClientImpl implements GatewayClient {
     _updateState(_state.withStatus(GatewayConnectionStatus.authenticating));
     _logger.i('[GATEWAY] Sending connect request...');
 
-    // Load or create device identity
+    // Always load/create device identity for pairing
     final deviceService = DeviceIdentityService();
     final identity = await deviceService.loadOrCreate();
 
-    // Build device signature
+    // Build device signature with correct payload format for OpenClaw
     final signature = deviceService.buildSignaturePayload(
       identity: identity,
       nonce: _state.challengeNonce!,
+      clientId: 'cli', // Use 'cli' for CLI-style clients
+      clientMode: 'ui',
+      role: 'operator',
+      scopes: ['operator.read', 'operator.write'],
+      token: _config!.token,
     );
 
     _logger.i(
       '[GATEWAY] Device signature created: deviceId=${identity.deviceId}',
     );
+    _logger.i('[GATEWAY] Pairing mode: token=${_config!.token ?? "null"}');
 
     final request = GatewayRequestFactory.connect(
       nonce: _state.challengeNonce!,
       token: _config!.token,
       password: _config!.password,
+      clientId: 'cli', // Must match the clientId used in signature
+      displayName: 'ClawTalk', // Friendly device name for pairing
       deviceSignature: signature,
     );
 

@@ -23,13 +23,101 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
   void initState() {
     super.initState();
     // Load connections when screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(connectionListProvider.notifier).loadConnections();
       ref.read(connectionStatusProvider.notifier).startMonitoring();
 
-      // DEBUG: Auto-test Gateway connection
-      _autoTestGatewayConnection();
+      // Create and save the test connection (but don't auto-connect)
+      await _createTestConnection(autoConnect: false);
     });
+  }
+
+  /// Create test connection and save it
+  Future<void> _createTestConnection({bool autoConnect = true}) async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!mounted) return;
+
+    print('[DEBUG] ========== Creating Test Connection ==========');
+
+    // Check if connection already exists
+    final state = ref.read(connectionListProvider);
+    // Use 192.168.88.84 - gateway now listens on all interfaces
+    final existing = state.connections
+        .where((c) => c.host == '192.168.88.84')
+        .firstOrNull;
+
+    ConnectionConfig connection;
+    if (existing == null) {
+      // Create new connection with gateway token
+      connection = ConnectionConfig(
+        id: 'test-gateway-${DateTime.now().millisecondsSinceEpoch}',
+        name: 'Test Gateway (LAN)',
+        host: '192.168.88.84',
+        port: 18789,
+        token: '3796df06a7b5801caba54f35669281841ce2c3d9bfa1e6ce',
+        createdAt: DateTime.now(),
+      );
+
+      print('[DEBUG] Saving connection: ${connection.host}:${connection.port}');
+      await ref.read(connectionListProvider.notifier).addConnection(connection);
+      print('[DEBUG] Connection saved!');
+    } else {
+      connection = existing;
+      print('[DEBUG] Connection already exists: ${connection.id}');
+    }
+
+    // Only auto-connect if requested
+    if (!autoConnect) {
+      print('[DEBUG] Auto-connect disabled, user can click Connect button');
+      return;
+    }
+
+    // Now try to connect
+    print('[DEBUG] ========== Attempting Connection ==========');
+    print('[DEBUG] Connecting to ${connection.host}:${connection.port}...');
+    print('[DEBUG] Token: ${connection.token ?? "null"}');
+
+    try {
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(connection);
+      print('[DEBUG] ========== ✅ CONNECTED SUCCESSFULLY! ==========');
+    } catch (e) {
+      print('[DEBUG] ========== ❌ CONNECTION FAILED: $e ==========');
+
+      // Check if this is a pairing required error
+      if (mounted) {
+        final errorString = e.toString().toLowerCase();
+        if (errorString.contains('pairing required') ||
+            errorString.contains('not_paired')) {
+          _showPairingRequiredDialog();
+        }
+      }
+    }
+  }
+
+  /// Show dialog when device pairing is required
+  void _showPairingRequiredDialog() {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Device Pairing Required'),
+        content: const Text(
+          'A pairing request has been sent to the Gateway.\n\n'
+          'Please ask the OpenClaw administrator to approve this device:\n\n'
+          '• Run: openclaw devices list\n'
+          '• Run: openclaw devices approve --latest\n\n'
+          'After approval, try connecting again.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Auto-test Gateway connection for debugging
@@ -40,15 +128,18 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
 
     print('[DEBUG] ========== Auto-testing Gateway Connection ==========');
 
+    // User's test connection - using localhost since 192.168.88.84 is not reachable
     final connection = ConnectionConfig(
-      id: 'localhost-debug',
-      name: 'Local Gateway',
+      id: 'test-gateway',
+      name: 'Test Gateway',
       host: '127.0.0.1',
       port: 18789,
+      token: '3796df06a7b5801caba54f35669281841ce2c3d9bfa1e6ce',
       createdAt: DateTime.now(),
     );
 
     print('[DEBUG] Connecting to ${connection.host}:${connection.port}...');
+    print('[DEBUG] Token: ${connection.token}');
 
     try {
       await ref
