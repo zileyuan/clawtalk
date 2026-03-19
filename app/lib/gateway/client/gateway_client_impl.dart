@@ -11,7 +11,6 @@ import 'package:clawtalk/gateway/protocol/gateway_event.dart';
 import 'package:clawtalk/gateway/protocol/gateway_request.dart';
 import 'package:clawtalk/gateway/protocol/gateway_response.dart';
 import 'package:logger/logger.dart';
-import 'package:web_socket_channel/status.dart' as ws_status;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// WebSocket implementation of Gateway client
@@ -383,7 +382,7 @@ class GatewayClientImpl implements GatewayClient {
     _subscription = null;
 
     await _channel?.sink.close(
-      ws_status.goingAway,
+      1000, // Use 1000 (normal closure) - valid close codes are 1000 or 3000-4999
       reason ?? 'Client disconnecting',
     );
     _channel = null;

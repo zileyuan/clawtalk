@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:convert/convert.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 /// Device identity for Gateway authentication
@@ -99,41 +100,77 @@ class DeviceIdentityService {
     }
     final newIdentity = DeviceIdentity.generate();
     await save(newIdentity);
+    // If save failed, still return the identity (will be regenerated next time)
     return newIdentity;
   }
 
   /// Load existing device identity
   Future<DeviceIdentity?> load() async {
+    // Try secure storage first
     try {
       final deviceId = await _secureStorage.read(key: _deviceIdKey);
       final privateKeyHex = await _secureStorage.read(key: _privateKeyKey);
       final publicKeyHex = await _secureStorage.read(key: _publicKeyKey);
 
-      if (deviceId == null || privateKeyHex == null || publicKeyHex == null) {
-        return null;
+      if (deviceId != null && privateKeyHex != null && publicKeyHex != null) {
+        return DeviceIdentity.fromHex(
+          deviceId: deviceId,
+          privateKeyHex: privateKeyHex,
+          publicKeyHex: publicKeyHex,
+        );
       }
-
-      return DeviceIdentity.fromHex(
-        deviceId: deviceId,
-        privateKeyHex: privateKeyHex,
-        publicKeyHex: publicKeyHex,
-      );
     } catch (e) {
-      return null;
+      // Secure storage failed, try preferences fallback
     }
+
+    // Fallback to SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final deviceId = prefs.getString(_deviceIdKey);
+      final privateKeyHex = prefs.getString(_privateKeyKey);
+      final publicKeyHex = prefs.getString(_publicKeyKey);
+
+      if (deviceId != null && privateKeyHex != null && publicKeyHex != null) {
+        return DeviceIdentity.fromHex(
+          deviceId: deviceId,
+          privateKeyHex: privateKeyHex,
+          publicKeyHex: publicKeyHex,
+        );
+      }
+    } catch (e) {
+      // Preferences also failed
+    }
+
+    return null;
   }
 
   /// Save device identity
   Future<void> save(DeviceIdentity identity) async {
-    await _secureStorage.write(key: _deviceIdKey, value: identity.deviceId);
-    await _secureStorage.write(
-      key: _privateKeyKey,
-      value: identity.privateKeyHex,
-    );
-    await _secureStorage.write(
-      key: _publicKeyKey,
-      value: identity.publicKeyHex,
-    );
+    // Try secure storage first
+    try {
+      await _secureStorage.write(key: _deviceIdKey, value: identity.deviceId);
+      await _secureStorage.write(
+        key: _privateKeyKey,
+        value: identity.privateKeyHex,
+      );
+      await _secureStorage.write(
+        key: _publicKeyKey,
+        value: identity.publicKeyHex,
+      );
+      return; // Success
+    } catch (e) {
+      // Secure storage failed, try preferences fallback
+    }
+
+    // Fallback to SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_deviceIdKey, identity.deviceId);
+      await prefs.setString(_privateKeyKey, identity.privateKeyHex);
+      await prefs.setString(_publicKeyKey, identity.publicKeyHex);
+    } catch (e) {
+      // Both storage methods failed - identity won't persist
+    }
   }
 
   /// Sign a message with device private key
@@ -172,8 +209,21 @@ class DeviceIdentityService {
 
   /// Clear stored device identity
   Future<void> clear() async {
-    await _secureStorage.delete(key: _deviceIdKey);
-    await _secureStorage.delete(key: _privateKeyKey);
-    await _secureStorage.delete(key: _publicKeyKey);
+    try {
+      await _secureStorage.delete(key: _deviceIdKey);
+      await _secureStorage.delete(key: _privateKeyKey);
+      await _secureStorage.delete(key: _publicKeyKey);
+    } catch (e) {
+      // Ignore errors
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_deviceIdKey);
+      await prefs.remove(_privateKeyKey);
+      await prefs.remove(_publicKeyKey);
+    } catch (e) {
+      // Ignore errors
+    }
   }
 }
