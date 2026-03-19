@@ -1,3 +1,4 @@
+import 'package:clawtalk/gateway/crypto/device_identity.dart';
 import 'package:clawtalk/gateway/protocol/gateway_message.dart';
 import 'package:uuid/uuid.dart';
 
@@ -81,6 +82,7 @@ class GatewayRequestFactory {
     String platform = 'macos',
     String mode =
         'ui', // "cli", "webchat", "ui", "backend", "node", "probe", "test"
+    DeviceSignaturePayload? deviceSignature,
   }) => GatewayRequest(
     id: _generateId(),
     method: 'connect',
@@ -100,6 +102,7 @@ class GatewayRequestFactory {
       'caps': <String>[],
       'commands': <String>[],
       'permissions': <String, dynamic>{},
+      if (deviceSignature != null) 'device': deviceSignature.toJson(),
       if (token != null) 'auth': {'token': token},
       if (password != null && token == null) 'auth': {'password': password},
     },

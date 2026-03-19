@@ -5,6 +5,7 @@ import 'package:clawtalk/acp/client/connection_config.dart';
 import 'package:clawtalk/gateway/client/gateway_client.dart';
 import 'package:clawtalk/gateway/client/gateway_connection_state.dart';
 import 'package:clawtalk/gateway/constants/gateway_constants.dart';
+import 'package:clawtalk/gateway/crypto/device_identity.dart';
 import 'package:clawtalk/gateway/exceptions/gateway_exception.dart';
 import 'package:clawtalk/gateway/protocol/gateway_event.dart';
 import 'package:clawtalk/gateway/protocol/gateway_request.dart';
@@ -134,10 +135,25 @@ class GatewayClientImpl implements GatewayClient {
     _updateState(_state.withStatus(GatewayConnectionStatus.authenticating));
     _logger.i('[GATEWAY] Sending connect request...');
 
+    // Load or create device identity
+    final deviceService = DeviceIdentityService();
+    final identity = await deviceService.loadOrCreate();
+
+    // Build device signature
+    final signature = deviceService.buildSignaturePayload(
+      identity: identity,
+      nonce: _state.challengeNonce!,
+    );
+
+    _logger.i(
+      '[GATEWAY] Device signature created: deviceId=${identity.deviceId}',
+    );
+
     final request = GatewayRequestFactory.connect(
       nonce: _state.challengeNonce!,
       token: _config!.token,
       password: _config!.password,
+      deviceSignature: signature,
     );
 
     _logger.i('[GATEWAY] Connect request: ${request.toJson()}');
