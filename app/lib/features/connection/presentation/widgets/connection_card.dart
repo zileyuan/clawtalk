@@ -37,98 +37,69 @@ class ConnectionCard extends ConsumerWidget {
             width: 0.5,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // Status indicator
-                  ConnectionStatusIndicator(status: status),
-                  const SizedBox(width: 12),
-                  // Connection info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          connection.name,
-                          style: AppTextStyles.headline3.copyWith(
-                            color: CupertinoColors.label,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              CupertinoIcons.globe,
-                              size: 14,
-                              color: CupertinoColors.secondaryLabel,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${connection.host}:${connection.port}',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: CupertinoColors.secondaryLabel,
-                                fontFamily: 'SF Mono',
-                              ),
-                            ),
-                            if (connection.useTLS) ...[
-                              const SizedBox(width: 8),
-                              Icon(
-                                CupertinoIcons.lock_fill,
-                                size: 12,
-                                color: AppColors.success,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Status indicator
+              ConnectionStatusIndicator(status: status),
+              const SizedBox(width: 12),
+              // Connection info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      connection.name,
+                      style: AppTextStyles.headline3.copyWith(
+                        color: CupertinoColors.label,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  // Action buttons
-                  ConnectionActions(
-                    connectionId: connection.id,
-                    status: status,
-                  ),
-                ],
-              ),
-            ),
-            // Divider
-            Container(
-              height: 0.5,
-              color: CupertinoColors.separator.withOpacity(0.3),
-            ),
-            // Bottom actions row
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CupertinoButton(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    onPressed: () => _showEditOptions(context, ref),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(height: 4),
+                    Row(
                       children: [
                         Icon(
-                          CupertinoIcons.ellipsis,
-                          size: 18,
-                          color: CupertinoColors.activeBlue,
+                          CupertinoIcons.globe,
+                          size: 14,
+                          color: CupertinoColors.secondaryLabel,
                         ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${connection.host}:${connection.port}',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: CupertinoColors.secondaryLabel,
+                            fontFamily: 'SF Mono',
+                          ),
+                        ),
+                        if (connection.useTLS) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            CupertinoIcons.lock_fill,
+                            size: 12,
+                            color: AppColors.success,
+                          ),
+                        ],
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              // More options button (... menu)
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                onPressed: () => _showEditOptions(context, ref),
+                child: Icon(
+                  CupertinoIcons.ellipsis,
+                  size: 20,
+                  color: CupertinoColors.activeBlue,
+                ),
+              ),
+              // Connect/Disconnect button
+              ConnectionActions(connectionId: connection.id, status: status),
+            ],
+          ),
         ),
       ),
     );
