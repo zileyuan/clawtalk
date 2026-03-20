@@ -301,12 +301,29 @@ class SessionNotifier extends StateNotifier<SessionState> {
           final request = GatewayRequestFactory.sessionsDelete(
             sessionKey: session.key,
           );
-          await client.sendRequest(request);
-          _logger.i('Deleted session on Gateway: ${session.key}');
+          final response = await client.sendRequest(request);
+
+          if (response.ok) {
+            _logger.i('Deleted session on Gateway: ${session.key}');
+          } else {
+            _logger.w(
+              'Gateway refused to delete session ${session.key}: ${response.error}',
+            );
+            // Show error to user
+            state = state.copyWith(
+              error:
+                  'Failed to delete session on server: ${response.error?.message ?? 'Unknown error'}',
+            );
+            return; // Don't delete locally if Gateway refused
+          }
         } catch (e) {
           _logger.w('Failed to delete session on Gateway: $e');
           // Continue with local deletion even if Gateway fails
         }
+      } else {
+        _logger.w(
+          'Not connected to Gateway or session has no key, only deleting locally',
+        );
       }
 
       final updatedSessions = state.sessions
