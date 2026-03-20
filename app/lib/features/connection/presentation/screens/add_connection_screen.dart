@@ -17,7 +17,10 @@ class AddConnectionScreen extends ConsumerWidget {
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('New Connection'),
+        middle: Text(
+          'New Connection',
+          style: TextStyle(color: CupertinoColors.label.resolveFrom(context)),
+        ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => _onCancel(context, ref),

@@ -27,7 +27,10 @@ class _EditConnectionScreenState extends ConsumerState<EditConnectionScreen> {
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Edit Connection'),
+        middle: Text(
+          'Edit Connection',
+          style: TextStyle(color: CupertinoColors.label.resolveFrom(context)),
+        ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => _onCancel(context, ref),
