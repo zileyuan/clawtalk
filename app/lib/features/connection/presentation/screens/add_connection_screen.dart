@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/themes/app_text_styles.dart';
+import '../../domain/entities/connection_config.dart';
 import '../providers/connection_form_provider.dart';
 import '../providers/connection_list_provider.dart';
+import '../providers/connection_status_provider.dart';
 import '../widgets/connection_form.dart';
 
 /// Screen for adding a new connection
@@ -114,6 +118,8 @@ class AddConnectionScreen extends ConsumerWidget {
   }
 
   Future<void> _testConnection(BuildContext context, WidgetRef ref) async {
+    final formData = ref.read(connectionFormProvider);
+
     // Show testing indicator
     showCupertinoDialog<void>(
       context: context,
@@ -133,25 +139,96 @@ class AddConnectionScreen extends ConsumerWidget {
       ),
     );
 
-    // Simulate test
-    await Future.delayed(const Duration(seconds: 1));
+    // Create a temporary connection config from form data
+    final tempConfig = ConnectionConfig(
+      id: 'test-${DateTime.now().millisecondsSinceEpoch}',
+      name: formData.name,
+      host: formData.host,
+      port: int.tryParse(formData.port) ?? 18789,
+      token: formData.token,
+      password: formData.password,
+      useTLS: formData.useTLS,
+      createdAt: DateTime.now(),
+    );
 
-    if (context.mounted) {
-      Navigator.of(context).pop();
+    try {
+      // Try to connect with timeout
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(tempConfig)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Connection timed out after 10 seconds');
+            },
+          );
 
-      showCupertinoDialog<void>(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Connection Test'),
-          content: const Text('Successfully connected to the server!'),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+      // Disconnect after test
+      ref.read(connectionStatusProvider.notifier).disconnect(tempConfig.id);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connection Test'),
+            content: const Text('Successfully connected to the server!'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } on TimeoutException catch (e) {
+      // Disconnect on timeout
+      ref.read(connectionStatusProvider.notifier).disconnect(tempConfig.id);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connection Test Failed'),
+            content: Text(e.message ?? 'Connection timed out'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      // Disconnect on error
+      ref.read(connectionStatusProvider.notifier).disconnect(tempConfig.id);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connection Test Failed'),
+            content: Text(
+              e.toString().length > 200
+                  ? '${e.toString().substring(0, 200)}...'
+                  : e.toString(),
             ),
-          ],
-        ),
-      );
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 }
