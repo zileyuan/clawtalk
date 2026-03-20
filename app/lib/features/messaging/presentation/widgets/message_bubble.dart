@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show SelectableText;
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/themes/app_colors.dart';
@@ -45,16 +47,18 @@ class MessageBubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
         child: Row(
-          mainAxisAlignment:
-              isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: isUser
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (!isUser) _buildAvatar(isDark),
             const SizedBox(width: 8),
             Flexible(
               child: Column(
-                crossAxisAlignment:
-                    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isUser
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   Container(
                     constraints: BoxConstraints(
@@ -104,8 +108,9 @@ class MessageBubble extends StatelessWidget {
         iconColor = CupertinoColors.white;
       case MessageRole.assistant:
         iconData = CupertinoIcons.gear_solid;
-        backgroundColor =
-            isDark ? CupertinoColors.systemGrey : AppColors.assistantMessage;
+        backgroundColor = isDark
+            ? CupertinoColors.systemGrey
+            : AppColors.assistantMessage;
         iconColor = isDark ? CupertinoColors.white : CupertinoColors.white;
       case MessageRole.system:
         iconData = CupertinoIcons.info_circle_fill;
@@ -204,6 +209,10 @@ class MessageBubble extends StatelessWidget {
 
     switch (block.type) {
       case ContentBlockType.text:
+        // Assistant messages should render as markdown
+        if (!isUser && !isSystem) {
+          return _buildMarkdownBlock(block.content, textColor);
+        }
         return _buildTextBlock(block.content, textColor);
 
       case ContentBlockType.markdown:
@@ -225,17 +234,32 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildTextBlock(String text, Color textColor) {
-    return Text(
+    return SelectableText(
       text,
       style: AppTextStyles.messageUser.copyWith(color: textColor),
     );
   }
 
   Widget _buildMarkdownBlock(String markdown, Color textColor) {
-    // Simple markdown rendering - for full support would use a markdown package
-    return Text(
-      markdown,
-      style: AppTextStyles.messageAssistant.copyWith(color: textColor),
+    return MarkdownBody(
+      data: markdown,
+      selectable: true,
+      styleSheet: MarkdownStyleSheet(
+        p: AppTextStyles.messageAssistant.copyWith(color: textColor),
+        h1: AppTextStyles.headline1.copyWith(color: textColor),
+        h2: AppTextStyles.headline2.copyWith(color: textColor),
+        h3: AppTextStyles.headline3.copyWith(color: textColor),
+        code: AppTextStyles.code.copyWith(
+          color: textColor,
+          backgroundColor: CupertinoColors.systemGrey5,
+        ),
+        codeblockDecoration: BoxDecoration(
+          color: CupertinoColors.systemGrey6,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        blockquote: AppTextStyles.body.copyWith(color: textColor),
+        listBullet: AppTextStyles.body.copyWith(color: textColor),
+      ),
     );
   }
 
