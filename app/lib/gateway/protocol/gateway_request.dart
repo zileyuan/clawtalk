@@ -182,6 +182,14 @@ class GatewayRequestFactory {
         params: {'sessionKey': sessionKey},
       );
 
+  /// Delete a session
+  static GatewayRequest sessionsDelete({required String sessionKey}) =>
+      GatewayRequest(
+        id: _generateId(),
+        method: 'sessions.delete',
+        params: {'sessionKey': sessionKey},
+      );
+
   /// Compact a session
   static GatewayRequest sessionsCompact({
     required String sessionKey,

@@ -287,12 +287,31 @@ class SessionNotifier extends StateNotifier<SessionState> {
   /// Delete a session
   Future<void> deleteSession(String sessionId) async {
     try {
+      // Find the session to get its key
+      final session = state.sessions.firstWhere(
+        (s) => s.id == sessionId,
+        orElse: () => throw Exception('Session not found'),
+      );
+
+      // Try to delete session on Gateway using sessionKey
+      final connectionManager = _ref.read(connectionManagerProvider);
+      if (connectionManager.isConnected && session.key.isNotEmpty) {
+        try {
+          final client = _ref.read(connectionManagerProvider.notifier).client;
+          final request = GatewayRequestFactory.sessionsDelete(
+            sessionKey: session.key,
+          );
+          await client.sendRequest(request);
+          _logger.i('Deleted session on Gateway: ${session.key}');
+        } catch (e) {
+          _logger.w('Failed to delete session on Gateway: $e');
+          // Continue with local deletion even if Gateway fails
+        }
+      }
+
       final updatedSessions = state.sessions
           .where((s) => s.id != sessionId)
           .toList();
-
-      // TODO: Replace with actual API call
-      // await api.deleteSession(sessionId);
 
       state = state.copyWith(
         sessions: updatedSessions,
@@ -301,6 +320,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
             : state.activeSession,
       );
     } catch (e) {
+      _logger.e('Failed to delete session: $e');
       state = state.copyWith(error: 'Failed to delete session: $e');
     }
   }
