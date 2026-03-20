@@ -156,7 +156,10 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemBackground,
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Sessions'),
+        middle: Text(
+          'Sessions',
+          style: TextStyle(color: CupertinoColors.label.resolveFrom(context)),
+        ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: _createNewSession,

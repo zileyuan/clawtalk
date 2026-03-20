@@ -188,7 +188,10 @@ class _ConnectionListScreenState extends ConsumerState<ConnectionListScreen> {
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Connections'),
+        middle: Text(
+          'Connections',
+          style: TextStyle(color: CupertinoColors.label.resolveFrom(context)),
+        ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => _navigateToAdd(context),

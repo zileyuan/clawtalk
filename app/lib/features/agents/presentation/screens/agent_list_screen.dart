@@ -30,7 +30,10 @@ class _AgentListScreenState extends ConsumerState<AgentListScreen> {
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Agents'),
+        middle: Text(
+          'Agents',
+          style: TextStyle(color: CupertinoColors.label.resolveFrom(context)),
+        ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           child: const Icon(CupertinoIcons.refresh),
