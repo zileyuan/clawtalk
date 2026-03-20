@@ -78,6 +78,39 @@ class _EditConnectionScreenState extends ConsumerState<EditConnectionScreen> {
               // Form section
               ConnectionFormWithAuth(initialConnection: widget.connection),
 
+              // Test connection button
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: CupertinoButton(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  onPressed: formState.isValid
+                      ? () => _testConnection(context, ref)
+                      : null,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        CupertinoIcons.bolt_fill,
+                        size: 16,
+                        color: formState.isValid
+                            ? CupertinoColors.activeBlue
+                            : CupertinoColors.systemGrey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Test Connection',
+                        style: TextStyle(
+                          color: formState.isValid
+                              ? CupertinoColors.activeBlue
+                              : CupertinoColors.systemGrey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               // Delete button
               const SizedBox(height: 32),
               Padding(
@@ -124,6 +157,92 @@ class _EditConnectionScreenState extends ConsumerState<EditConnectionScreen> {
 
       if (context.mounted) {
         Navigator.of(context).pop();
+      }
+    }
+  }
+
+  Future<void> _testConnection(BuildContext context, WidgetRef ref) async {
+    // Get the current form values
+    final formData = ref.read(connectionFormProvider);
+
+    // Show testing indicator
+    showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const CupertinoAlertDialog(
+        content: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CupertinoActivityIndicator(),
+              SizedBox(height: 16),
+              Text('Testing connection...'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Create a temporary connection config from form data
+    final tempConfig = ConnectionConfig(
+      id: 'test-${DateTime.now().millisecondsSinceEpoch}',
+      name: formData.name,
+      host: formData.host,
+      port: int.tryParse(formData.port) ?? widget.connection.port,
+      token: formData.token,
+      password: formData.password,
+      useTLS: formData.useTLS,
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      // Try to connect
+      await ref
+          .read(connectionStatusProvider.notifier)
+          .connectToConnection(tempConfig);
+
+      // Disconnect after test
+      ref.read(connectionStatusProvider.notifier).disconnect(tempConfig.id);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connection Test'),
+            content: const Text('Successfully connected to the server!'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Connection Test Failed'),
+            content: Text(
+              e.toString().length > 200
+                  ? '${e.toString().substring(0, 200)}...'
+                  : e.toString(),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
