@@ -42,28 +42,48 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
       builder: (context) => CupertinoActionSheet(
         title: const Text('Session Options'),
         actions: [
-          if (session.status == SessionStatus.paused)
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ref.read(sessionProvider.notifier).resumeSession(session.id);
-              },
-              child: const Text('Resume Session'),
-            )
-          else if (session.status == SessionStatus.active)
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ref.read(sessionProvider.notifier).pauseSession(session.id);
-              },
-              child: const Text('Pause Session'),
-            ),
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.of(context).pop();
               _navigateToChat(session);
             },
             child: const Text('Open Chat'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final success = await ref
+                  .read(sessionProvider.notifier)
+                  .resetSession(session.id);
+              if (context.mounted) {
+                _showResultDialog(
+                  context,
+                  success ? 'Session Reset' : 'Reset Failed',
+                  success
+                      ? 'Session context has been cleared.'
+                      : ref.read(sessionProvider).error ?? 'Unknown error',
+                );
+              }
+            },
+            child: const Text('Reset Session'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final success = await ref
+                  .read(sessionProvider.notifier)
+                  .compactSession(session.id);
+              if (context.mounted) {
+                _showResultDialog(
+                  context,
+                  success ? 'Session Compacted' : 'Compact Failed',
+                  success
+                      ? 'Session context has been summarized and reduced.'
+                      : ref.read(sessionProvider).error ?? 'Unknown error',
+                );
+              }
+            },
+            child: const Text('Compact Session'),
           ),
           CupertinoActionSheetAction(
             onPressed: () {
@@ -102,6 +122,22 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
               ref.read(sessionProvider.notifier).deleteSession(session.id);
             },
             child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResultDialog(BuildContext context, String title, String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
           ),
         ],
       ),

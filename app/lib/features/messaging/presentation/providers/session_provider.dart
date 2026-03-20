@@ -246,44 +246,6 @@ class SessionNotifier extends StateNotifier<SessionState> {
     }
   }
 
-  /// Pause a session
-  Future<void> pauseSession(String sessionId) async {
-    try {
-      final updatedSessions = state.sessions.map((s) {
-        if (s.id == sessionId) {
-          return s.copyWith(status: SessionStatus.paused);
-        }
-        return s;
-      }).toList();
-
-      // TODO: Replace with actual API call
-      // await api.pauseSession(sessionId);
-
-      state = state.copyWith(sessions: updatedSessions);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to pause session: $e');
-    }
-  }
-
-  /// Resume a session
-  Future<void> resumeSession(String sessionId) async {
-    try {
-      final updatedSessions = state.sessions.map((s) {
-        if (s.id == sessionId) {
-          return s.copyWith(status: SessionStatus.active);
-        }
-        return s;
-      }).toList();
-
-      // TODO: Replace with actual API call
-      // await api.resumeSession(sessionId);
-
-      state = state.copyWith(sessions: updatedSessions);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to resume session: $e');
-    }
-  }
-
   /// Delete a session
   Future<void> deleteSession(String sessionId) async {
     try {
@@ -354,6 +316,85 @@ class SessionNotifier extends StateNotifier<SessionState> {
           ? updatedSession
           : state.activeSession,
     );
+  }
+
+  /// Reset a session (clear context)
+  Future<bool> resetSession(String sessionId) async {
+    try {
+      final session = state.sessions.firstWhere(
+        (s) => s.id == sessionId,
+        orElse: () => throw Exception('Session not found'),
+      );
+
+      final connectionManager = _ref.read(connectionManagerProvider);
+      if (!connectionManager.isConnected || session.key.isEmpty) {
+        _logger.w('Not connected to Gateway or session has no key');
+        state = state.copyWith(error: 'Not connected to Gateway');
+        return false;
+      }
+
+      final client = _ref.read(connectionManagerProvider.notifier).client;
+      final request = GatewayRequestFactory.sessionsReset(
+        sessionKey: session.key,
+      );
+      final response = await client.sendRequest(request);
+
+      if (response.ok) {
+        _logger.i('Reset session on Gateway: ${session.key}');
+        return true;
+      } else {
+        _logger.w('Gateway refused to reset session: ${response.error}');
+        state = state.copyWith(
+          error:
+              'Failed to reset session: ${response.error?.message ?? 'Unknown error'}',
+        );
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Failed to reset session: $e');
+      state = state.copyWith(error: 'Failed to reset session: $e');
+      return false;
+    }
+  }
+
+  /// Compact a session (summarize and reduce context)
+  Future<bool> compactSession(String sessionId, {String? instructions}) async {
+    try {
+      final session = state.sessions.firstWhere(
+        (s) => s.id == sessionId,
+        orElse: () => throw Exception('Session not found'),
+      );
+
+      final connectionManager = _ref.read(connectionManagerProvider);
+      if (!connectionManager.isConnected || session.key.isEmpty) {
+        _logger.w('Not connected to Gateway or session has no key');
+        state = state.copyWith(error: 'Not connected to Gateway');
+        return false;
+      }
+
+      final client = _ref.read(connectionManagerProvider.notifier).client;
+      final request = GatewayRequestFactory.sessionsCompact(
+        sessionKey: session.key,
+        instructions: instructions,
+      );
+      final response = await client.sendRequest(request);
+
+      if (response.ok) {
+        _logger.i('Compacted session on Gateway: ${session.key}');
+        return true;
+      } else {
+        _logger.w('Gateway refused to compact session: ${response.error}');
+        state = state.copyWith(
+          error:
+              'Failed to compact session: ${response.error?.message ?? 'Unknown error'}',
+        );
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Failed to compact session: $e');
+      state = state.copyWith(error: 'Failed to compact session: $e');
+      return false;
+    }
   }
 
   /// Clear active session
