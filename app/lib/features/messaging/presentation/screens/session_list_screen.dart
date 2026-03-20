@@ -49,97 +49,11 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
             },
             child: const Text('Open Chat'),
           ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              final success = await ref
-                  .read(sessionProvider.notifier)
-                  .resetSession(session.id);
-              if (context.mounted) {
-                _showResultDialog(
-                  context,
-                  success ? 'Session Reset' : 'Reset Failed',
-                  success
-                      ? 'Session context has been cleared.'
-                      : ref.read(sessionProvider).error ?? 'Unknown error',
-                );
-              }
-            },
-            child: const Text('Reset Session'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              final success = await ref
-                  .read(sessionProvider.notifier)
-                  .compactSession(session.id);
-              if (context.mounted) {
-                _showResultDialog(
-                  context,
-                  success ? 'Session Compacted' : 'Compact Failed',
-                  success
-                      ? 'Session context has been summarized and reduced.'
-                      : ref.read(sessionProvider).error ?? 'Unknown error',
-                );
-              }
-            },
-            child: const Text('Compact Session'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _showDeleteConfirmation(session);
-            },
-            isDestructiveAction: true,
-            child: const Text('Delete'),
-          ),
         ],
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(Session session) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Session'),
-        content: const Text(
-          'Are you sure you want to delete this session? This action cannot be undone.',
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              Navigator.of(context).pop();
-              ref.read(sessionProvider.notifier).deleteSession(session.id);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showResultDialog(BuildContext context, String title, String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
       ),
     );
   }
