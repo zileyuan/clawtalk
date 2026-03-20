@@ -94,18 +94,28 @@ class SessionNotifier extends StateNotifier<SessionState> {
   /// Load all sessions from Gateway
   Future<void> loadSessions() async {
     state = state.copyWith(isLoading: true, error: null);
+    _logger.i('[SESSION] Loading sessions...');
 
     try {
       final connectionManager = _ref.read(connectionManagerProvider);
+      _logger.i(
+        '[SESSION] Connection state: isConnected=${connectionManager.isConnected}',
+      );
+
       if (!connectionManager.isConnected) {
-        _logger.w('Not connected to Gateway');
+        _logger.w('[SESSION] Not connected to Gateway');
         state = state.copyWith(sessions: [], isLoading: false);
         return;
       }
 
       final client = _ref.read(connectionManagerProvider.notifier).client;
       final request = GatewayRequestFactory.sessionsList();
+      _logger.i('[SESSION] Sending request: ${request.toJson()}');
+
       final response = await client.sendRequest(request);
+      _logger.i(
+        '[SESSION] Response: ok=${response.ok}, payload=${response.payload}',
+      );
 
       if (response.ok && response.payload != null) {
         final sessionsJson =
@@ -118,12 +128,14 @@ class SessionNotifier extends StateNotifier<SessionState> {
             )
             .toList();
         state = state.copyWith(sessions: sessions, isLoading: false);
-        _logger.i('Loaded ${sessions.length} sessions from Gateway');
+        _logger.i('[SESSION] Loaded ${sessions.length} sessions from Gateway');
       } else {
+        _logger.w('[SESSION] Response not OK or no payload');
         state = state.copyWith(sessions: [], isLoading: false);
       }
-    } catch (e) {
-      _logger.e('Failed to load sessions: $e');
+    } catch (e, stackTrace) {
+      _logger.e('[SESSION] Failed to load sessions: $e');
+      _logger.e('[SESSION] StackTrace: $stackTrace');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load sessions: $e',
@@ -191,16 +203,22 @@ class SessionNotifier extends StateNotifier<SessionState> {
   /// End a session
   Future<void> endSession(String sessionId) async {
     try {
-      // Try to reset session on Gateway
+      // Find the session to get its key
+      final session = state.sessions.firstWhere(
+        (s) => s.id == sessionId,
+        orElse: () => throw Exception('Session not found'),
+      );
+
+      // Try to reset session on Gateway using sessionKey
       final connectionManager = _ref.read(connectionManagerProvider);
-      if (connectionManager.isConnected) {
+      if (connectionManager.isConnected && session.key.isNotEmpty) {
         try {
           final client = _ref.read(connectionManagerProvider.notifier).client;
           final request = GatewayRequestFactory.sessionsReset(
-            sessionId: sessionId,
+            sessionKey: session.key,
           );
           await client.sendRequest(request);
-          _logger.i('Reset session on Gateway: $sessionId');
+          _logger.i('Reset session on Gateway: ${session.key}');
         } catch (e) {
           _logger.w('Failed to reset session on Gateway: $e');
         }

@@ -238,6 +238,13 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
     final dateFormat = DateFormat('MMM d, h:mm a');
     final isActive = session.status == SessionStatus.active;
 
+    // Display key or agentId (truncate if too long)
+    final displayKey = session.key.isNotEmpty
+        ? (session.key.length > 30
+              ? '${session.key.substring(0, 30)}...'
+              : session.key)
+        : 'Agent ${session.agentId.length > 8 ? session.agentId.substring(0, 8) : session.agentId}';
+
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -294,7 +301,7 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Agent ${session.agentId.substring(0, 8)}',
+                            displayKey,
                             style: AppTextStyles.body.copyWith(
                               fontWeight: FontWeight.w600,
                               color: isDark
@@ -318,6 +325,27 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
+                        // Model info
+                        if (session.model.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              session.model,
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         Expanded(
                           child: Text(
                             _getStatusText(session.status),

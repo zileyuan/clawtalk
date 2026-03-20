@@ -2,10 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/message.dart';
-import '../providers/message_list_provider.dart';
+import '../providers/chat_provider.dart';
 import 'message_bubble.dart';
 
-/// Scrollable message list with auto-scroll and pagination
+/// Scrollable message list with auto-scroll
 class MessageList extends ConsumerStatefulWidget {
   /// Creates a message list
   const MessageList({
@@ -35,18 +35,11 @@ class MessageList extends ConsumerStatefulWidget {
 class _MessageListState extends ConsumerState<MessageList> {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledToBottom = true;
-  bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // Load initial messages
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(messageListProvider(widget.sessionId).notifier)
-          .loadInitialMessages();
-    });
   }
 
   @override
@@ -63,19 +56,6 @@ class _MessageListState extends ConsumerState<MessageList> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
     _isScrolledToBottom = currentScroll >= maxScroll - 50;
-
-    // Check if need to load more (pagination)
-    if (currentScroll <= 100 && !_isLoadingMore) {
-      _loadMoreMessages();
-    }
-  }
-
-  Future<void> _loadMoreMessages() async {
-    _isLoadingMore = true;
-    await ref
-        .read(messageListProvider(widget.sessionId).notifier)
-        .loadMoreMessages();
-    _isLoadingMore = false;
   }
 
   void scrollToBottom({bool animated = true}) {
@@ -100,8 +80,7 @@ class _MessageListState extends ConsumerState<MessageList> {
 
   @override
   Widget build(BuildContext context) {
-    final messageListState = ref.watch(messageListProvider(widget.sessionId));
-    final messages = messageListState.sortedMessages;
+    final messages = ref.watch(chatMessagesProvider);
 
     // Auto-scroll to bottom when new messages arrive if already at bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -110,11 +89,7 @@ class _MessageListState extends ConsumerState<MessageList> {
       }
     });
 
-    if (messageListState.isInitialLoad && messageListState.isLoading) {
-      return const Center(child: CupertinoActivityIndicator());
-    }
-
-    if (messageListState.isEmpty) {
+    if (messages.isEmpty) {
       return _buildEmptyState(context);
     }
 
@@ -129,15 +104,6 @@ class _MessageListState extends ConsumerState<MessageList> {
         controller: _scrollController,
         reverse: false,
         slivers: [
-          // Loading indicator at top (for pagination)
-          if (messageListState.isLoading && !messageListState.isInitialLoad)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CupertinoActivityIndicator()),
-              ),
-            ),
-
           // Messages list
           SliverPadding(
             padding: widget.padding ?? const EdgeInsets.symmetric(vertical: 8),

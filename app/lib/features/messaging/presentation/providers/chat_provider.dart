@@ -1,14 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:clawtalk/core/providers/connection_provider.dart';
+import 'package:clawtalk/gateway/protocol/gateway_request.dart';
 import '../../domain/entities/content_block.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/entities/session.dart';
 
 /// Provider for the current chat state
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  return ChatNotifier();
+  return ChatNotifier(ref: ref);
 });
 
 /// Provider for the currently selected session
@@ -82,9 +85,11 @@ class ChatState {
 
 /// Notifier for managing chat state
 class ChatNotifier extends StateNotifier<ChatState> {
+  final Ref _ref;
   final _uuid = const Uuid();
+  final Logger _logger = Logger();
 
-  ChatNotifier() : super(const ChatState());
+  ChatNotifier({required Ref ref}) : _ref = ref, super(const ChatState());
 
   /// Initialize chat with a session
   void initializeSession(Session session) {
@@ -122,18 +127,71 @@ class ChatNotifier extends StateNotifier<ChatState> {
       error: null,
     );
 
-    // Simulate sending (will be replaced with actual API call)
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      final connectionManager = _ref.read(connectionManagerProvider);
+      if (!connectionManager.isConnected) {
+        _logger.w('[CHAT] Not connected to Gateway');
+        _updateMessageStatus(message.id, MessageStatus.error);
+        state = state.copyWith(
+          isSending: false,
+          error: 'Not connected to Gateway',
+        );
+        return;
+      }
 
-    // Update message status to sent
+      final client = _ref.read(connectionManagerProvider.notifier).client;
+
+      // Use session.key (e.g., "agent:main:main") for Gateway, not session.id (UUID)
+      final sessionKey = state.currentSession!.key;
+      if (sessionKey.isEmpty) {
+        _logger.w('[CHAT] Session key is empty, cannot send message');
+        _updateMessageStatus(message.id, MessageStatus.error);
+        state = state.copyWith(isSending: false, error: 'Invalid session key');
+        return;
+      }
+
+      final request = GatewayRequestFactory.chatSend(
+        sessionKey: sessionKey,
+        text: text.trim(),
+      );
+      _logger.i(
+        '[CHAT] Sending message to sessionKey=$sessionKey: ${request.toJson()}',
+      );
+
+      final response = await client.sendRequest(request);
+      _logger.i(
+        '[CHAT] Response: ok=${response.ok}, payload=${response.payload}',
+      );
+
+      if (response.ok) {
+        // Update message status to sent
+        _updateMessageStatus(message.id, MessageStatus.sent);
+        state = state.copyWith(isSending: false);
+      } else {
+        _logger.w('[CHAT] Failed to send message: ${response.error}');
+        _updateMessageStatus(message.id, MessageStatus.error);
+        state = state.copyWith(
+          isSending: false,
+          error: response.error?.message ?? 'Failed to send message',
+        );
+      }
+    } catch (e, stackTrace) {
+      _logger.e('[CHAT] Error sending message: $e');
+      _logger.e('[CHAT] StackTrace: $stackTrace');
+      _updateMessageStatus(message.id, MessageStatus.error);
+      state = state.copyWith(isSending: false, error: 'Error: $e');
+    }
+  }
+
+  /// Helper to update message status
+  void _updateMessageStatus(String messageId, MessageStatus status) {
     final updatedMessages = state.messages.map((m) {
-      if (m.id == message.id) {
-        return m.copyWith(status: MessageStatus.sent);
+      if (m.id == messageId) {
+        return m.copyWith(status: status);
       }
       return m;
     }).toList();
-
-    state = state.copyWith(messages: updatedMessages, isSending: false);
+    state = state.copyWith(messages: updatedMessages);
   }
 
   /// Add an assistant message (typically from streaming)
@@ -141,6 +199,34 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(
       messages: [...state.messages, message],
       isReceiving: false,
+    );
+  }
+
+  /// Add an assistant message from text (simpler helper for Gateway responses)
+  void addAssistantMessageFromText(String text) {
+    final sessionId = state.currentSession?.id ?? '';
+    if (sessionId.isEmpty) {
+      _logger.w('[CHAT] Cannot add assistant message - no current session');
+      return;
+    }
+
+    final message = Message(
+      id: _uuid.v4(),
+      sessionId: sessionId,
+      role: MessageRole.assistant,
+      content: [
+        ContentBlock(
+          id: _uuid.v4(),
+          type: ContentBlockType.text,
+          content: text,
+        ),
+      ],
+      status: MessageStatus.delivered,
+      createdAt: DateTime.now(),
+    );
+    addAssistantMessage(message);
+    _logger.i(
+      '[CHAT] Added assistant message: ${text.length > 50 ? text.substring(0, 50) : text}...',
     );
   }
 

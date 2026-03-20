@@ -161,7 +161,8 @@ class SessionHeader extends ConsumerWidget {
     } else {
       switch (session.status) {
         case SessionStatus.active:
-          statusText = 'Online';
+          // Show model name if available
+          statusText = session.model.isNotEmpty ? session.model : 'Online';
           statusColor = AppColors.connected;
         case SessionStatus.paused:
           statusText = 'Paused';
@@ -197,8 +198,17 @@ class SessionHeader extends ConsumerWidget {
 
   String _getAgentName(Session? session) {
     if (session == null) return 'Select Agent';
-    // In a real implementation, this would fetch the agent name from the agent ID
-    return 'Agent ${session.agentId.substring(0, 8)}';
+    // Display key if available, otherwise agentId
+    if (session.key.isNotEmpty) {
+      return session.key.length > 30
+          ? '${session.key.substring(0, 30)}...'
+          : session.key;
+    }
+    // Fallback to agentId (with length check)
+    if (session.agentId.isEmpty) return 'Agent';
+    return session.agentId.length > 8
+        ? 'Agent ${session.agentId.substring(0, 8)}'
+        : 'Agent ${session.agentId}';
   }
 }
 

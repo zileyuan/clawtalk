@@ -5,7 +5,10 @@ class GatewayEventType {
   // Connection events
   static const String connectChallenge = 'connect.challenge';
 
-  // Message events
+  // Chat events (Gateway uses 'chat' with state field)
+  static const String chat = 'chat';
+
+  // Message events (legacy/alternative format)
   static const String message = 'message';
   static const String messageStart = 'message.start';
   static const String messageDelta = 'message.delta';

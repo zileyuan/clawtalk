@@ -111,35 +111,39 @@ class GatewayRequestFactory {
   );
 
   /// Send a chat message
+  ///
+  /// Gateway expects:
+  /// - sessionKey: The session key (e.g., "agent:main:main")
+  /// - message: The message content
+  /// - idempotencyKey: Unique key for idempotency
   static GatewayRequest chatSend({
-    required String sessionId,
+    required String sessionKey,
     required String text,
-    List<Map<String, dynamic>> attachments = const [],
-    String? agentId,
+    String? idempotencyKey,
   }) => GatewayRequest(
     id: _generateId(),
     method: 'chat.send',
     params: {
-      'sessionId': sessionId,
-      'prompt': {'text': text, 'attachments': attachments},
-      if (agentId != null) 'agentId': agentId,
+      'sessionKey': sessionKey,
+      'message': text,
+      'idempotencyKey': idempotencyKey ?? _generateId(),
     },
   );
 
   /// Abort a chat session
-  static GatewayRequest chatAbort({required String sessionId}) =>
+  static GatewayRequest chatAbort({required String sessionKey}) =>
       GatewayRequest(
         id: _generateId(),
         method: 'chat.abort',
-        params: {'sessionId': sessionId},
+        params: {'sessionKey': sessionKey},
       );
 
   /// Get chat history
-  static GatewayRequest chatHistory({required String sessionId, int? limit}) =>
+  static GatewayRequest chatHistory({required String sessionKey, int? limit}) =>
       GatewayRequest(
         id: _generateId(),
         method: 'chat.history',
-        params: {'sessionId': sessionId, if (limit != null) 'limit': limit},
+        params: {'sessionKey': sessionKey, if (limit != null) 'limit': limit},
       );
 
   /// List available agents
@@ -159,34 +163,34 @@ class GatewayRequestFactory {
 
   /// Preview a session
   static GatewayRequest sessionsPreview({
-    required String sessionId,
+    required String sessionKey,
     int? messageLimit,
   }) => GatewayRequest(
     id: _generateId(),
     method: 'sessions.preview',
     params: {
-      'sessionId': sessionId,
+      'sessionKey': sessionKey,
       if (messageLimit != null) 'messageLimit': messageLimit,
     },
   );
 
   /// Reset a session
-  static GatewayRequest sessionsReset({required String sessionId}) =>
+  static GatewayRequest sessionsReset({required String sessionKey}) =>
       GatewayRequest(
         id: _generateId(),
         method: 'sessions.reset',
-        params: {'sessionId': sessionId},
+        params: {'sessionKey': sessionKey},
       );
 
   /// Compact a session
   static GatewayRequest sessionsCompact({
-    required String sessionId,
+    required String sessionKey,
     String? instructions,
   }) => GatewayRequest(
     id: _generateId(),
     method: 'sessions.compact',
     params: {
-      'sessionId': sessionId,
+      'sessionKey': sessionKey,
       if (instructions != null) 'instructions': instructions,
     },
   );
